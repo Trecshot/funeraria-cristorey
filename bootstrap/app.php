@@ -16,9 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
         ]);
-        $middleware->redirectUsersTo(fn (Request $request) => $request->user()?->role === 'chofer'
-            ? route('movil.chofer')
-            : route('dashboard'));
+        $middleware->validateCsrfTokens(except: [
+            'login',
+            'logout',
+        ]);
+        $middleware->redirectUsersTo(fn (Request $request) => $request->user()
+            ? $request->user()->homeRoute()
+            : route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

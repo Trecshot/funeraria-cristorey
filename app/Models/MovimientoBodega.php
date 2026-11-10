@@ -10,12 +10,17 @@ class MovimientoBodega extends Model
     protected $table = 'movimientos_bodega';
 
     protected $fillable = [
-        'producto_bodega_id', 'user_id', 'origen', 'destino', 'cantidad',
+        'producto_bodega_id', 'urna_id', 'user_id', 'origen', 'destino', 'cantidad',
     ];
 
     public function producto(): BelongsTo
     {
-        return $this->belongsTo(ProductoBodega::class, 'producto_bodega_id');
+        return $this->belongsTo(Urna::class, 'producto_bodega_id');
+    }
+
+    public function urna(): BelongsTo
+    {
+        return $this->belongsTo(Urna::class, 'producto_bodega_id');
     }
 
     public function user(): BelongsTo

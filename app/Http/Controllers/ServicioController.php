@@ -7,20 +7,14 @@ use App\Models\Servicio;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ServicioController extends Controller
 {
-    private const DOCUMENT_TYPES = [
-        'certificado_defuncion' => 'Certificado de defuncion',
-        'resolucion_seremi' => 'Resolucion Seremi',
-        'oficio_fiscalia_sml' => 'Oficio de Fiscalia / SML',
-    ];
-
     public function index(): View
     {
         return view('servicios.index', [
@@ -35,25 +29,12 @@ class ServicioController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $this->validatedData($request);
-        $data['created_by'] = $request->user()->id;
-        $documentos = $data['documentos'] ?? [];
-        $destino = $data['destino'] ?? null;
-        unset($data['documentos']);
-        unset($data['destino']);
-        $data['requiere_sml'] = filled($data['causa_sml'] ?? null);
-        $data['folio'] = 'FC-'.Str::upper((string) Str::uuid());
-        $data = array_merge($data, $this->financialAttributes($data));
-        $data = $this->compatibleServiceColumns($data, $destino);
+        $servicio = new Servicio([
+            'created_by' => $request->user()->id,
+            'folio' => 'FC-'.Str::upper((string) Str::uuid()),
+        ]);
 
-        $this->assertS3Configured($documentos);
-        $servicio = DB::transaction(function () use ($data, $destino, $documentos, $request) {
-            $servicio = Servicio::create($data);
-            $this->syncTraslado($servicio, $destino);
-            $this->uploadDocuments($request, $servicio, $documentos);
-
-            return $servicio;
-        });
+        $this->persistServicio($request, $servicio);
 
         return redirect()->route('servicios.show', $servicio)->with('status', 'Expediente creado.');
     }
@@ -72,21 +53,7 @@ class ServicioController extends Controller
 
     public function update(Request $request, Servicio $servicio): RedirectResponse
     {
-        $data = $this->validatedData($request);
-        $documentos = $data['documentos'] ?? [];
-        $destino = $data['destino'] ?? null;
-        unset($data['documentos']);
-        unset($data['destino']);
-        $data['requiere_sml'] = filled($data['causa_sml'] ?? null);
-        $data = array_merge($data, $this->financialAttributes($data, $servicio));
-        $data = $this->compatibleServiceColumns($data, $destino);
-
-        $this->assertS3Configured($documentos);
-        DB::transaction(function () use ($data, $destino, $documentos, $request, $servicio) {
-            $servicio->update($data);
-            $this->syncTraslado($servicio, $destino);
-            $this->uploadDocuments($request, $servicio, $documentos);
-        });
+        $this->persistServicio($request, $servicio);
 
         return redirect()->route('servicios.show', $servicio)->with('status', 'Expediente actualizado.');
     }
@@ -112,10 +79,36 @@ class ServicioController extends Controller
             ->download($documento->path, $documento->nombre_original);
     }
 
+    private function persistServicio(Request $request, Servicio $servicio): void
+    {
+        $data = $this->validatedData($request);
+        $documentos = $data['documentos'] ?? [];
+        $destino = $data['destino'] ?? null;
+        unset($data['documentos'], $data['destino'], $data['tipos_documentos']);
+
+        $this->assertS3Configured($documentos);
+
+        $preserveUfValue = $servicio->exists
+            && $data['convenio'] === 'afp'
+            && ! filled(config('funeraria.uf_value_clp'))
+            && $servicio->uf_value_clp;
+
+        $servicio->fill($data);
+        $servicio->requiere_sml = filled($servicio->causa_sml);
+        if (! $preserveUfValue) {
+            $servicio->uf_value_clp = null;
+        }
+        $servicio->calcularAportes();
+
+        DB::transaction(function () use ($request, $servicio, $destino, $documentos): void {
+            $servicio->save();
+            $this->syncTraslado($servicio, $destino);
+            $this->uploadDocuments($request, $servicio, $documentos);
+        });
+    }
+
     private function validatedData(Request $request): array
     {
-        $types = implode(',', array_keys(self::DOCUMENT_TYPES));
-
         return $request->validate([
             'cliente_nombre' => ['required', 'string', 'max:255'],
             'cliente_telefono' => ['nullable', 'string', 'max:30'],
@@ -123,15 +116,15 @@ class ServicioController extends Controller
             'escolaridad' => ['nullable', 'string', 'max:255'],
             'oficio' => ['nullable', 'string', 'max:255'],
             'causa_sml' => ['nullable', 'string', 'max:5000'],
-            'convenio' => ['required', 'in:particular,ips,afp,dipreca,sindicato'],
+            'convenio' => ['required', Rule::in(array_keys(Servicio::CONVENIOS))],
             'monto_servicio' => ['required', 'integer', 'min:0', 'max:9999999999'],
             'cortejo_at' => ['nullable', 'date'],
             'destino' => ['nullable', 'string', 'max:255'],
-            'estado' => ['required', 'in:abierto,en_preparacion,completado,cancelado'],
+            'estado' => ['required', Rule::in(array_keys(Servicio::ESTADOS))],
             'documentos' => ['sometimes', 'array'],
             'documentos.*' => ['nullable', 'file', 'max:15360', 'mimes:pdf,jpg,jpeg,png'],
             'tipos_documentos' => ['sometimes', 'array'],
-            'tipos_documentos.*' => ['required', 'in:'.$types],
+            'tipos_documentos.*' => ['required', Rule::in(array_keys(DocumentoServicio::TIPOS))],
         ]);
     }
 
@@ -147,11 +140,7 @@ class ServicioController extends Controller
         $traslado->fill([
             'salida_at' => $servicio->cortejo_at,
             'cementerio' => $destino,
-        ]);
-        if (Schema::hasColumn('traslados', 'destino')) {
-            $traslado->destino = $destino;
-        }
-        $traslado->save();
+        ])->save();
     }
 
     private function uploadDocuments(Request $request, Servicio $servicio, array $files): void
@@ -164,7 +153,7 @@ class ServicioController extends Controller
             }
 
             $type = $request->input("tipos_documentos.$index");
-            abort_unless(isset(self::DOCUMENT_TYPES[$type]), 422, 'El tipo de documento no es válido.');
+            abort_unless(isset(DocumentoServicio::TIPOS[$type]), 422, 'El tipo de documento no es válido.');
 
             $path = Storage::disk($disk)->putFile("servicios/{$servicio->id}", $file);
             if (! $path) {
@@ -175,11 +164,7 @@ class ServicioController extends Controller
             $oldDisk = $documento->exists ? $documento->disk : null;
             $oldPath = $documento->exists ? $documento->path : null;
 
-            if ($oldPath && $oldDisk !== $disk && ! Storage::disk($oldDisk)->delete($oldPath)) {
-                Storage::disk($disk)->delete($path);
-                abort(503, 'No se pudo reemplazar el documento privado anterior.');
-            }
-            if ($oldPath && $oldDisk === $disk && ! Storage::disk($disk)->delete($oldPath)) {
+            if ($oldPath && ! Storage::disk($oldDisk)->delete($oldPath)) {
                 Storage::disk($disk)->delete($path);
                 abort(503, 'No se pudo reemplazar el documento privado anterior.');
             }
@@ -190,48 +175,9 @@ class ServicioController extends Controller
                 'nombre_original' => $file->getClientOriginalName(),
                 'disk' => $disk,
                 'path' => $path,
+                'ruta' => $path,
             ])->save();
         }
-    }
-
-    private function financialAttributes(array $data, ?Servicio $existing = null): array
-    {
-        if (
-            $data['convenio'] === 'afp'
-            && ! filled(config('funeraria.uf_value_clp'))
-            && $existing?->uf_value_clp
-        ) {
-            $data['uf_value_clp'] = $existing->uf_value_clp;
-        }
-
-        $servicio = new Servicio($data);
-        $servicio->calcularAportes();
-
-        return [
-            'aporte_convenio' => $servicio->aporte_convenio,
-            'copago' => $servicio->copago,
-            'uf_value_clp' => $servicio->uf_value_clp,
-        ];
-    }
-
-    private function compatibleServiceColumns(array $data, ?string $destino): array
-    {
-        foreach ([
-            'cliente_contratante' => 'cliente_nombre',
-            'telefono_cliente' => 'cliente_telefono',
-            'difunto' => 'difunto_nombre',
-            'total_servicio' => 'monto_servicio',
-        ] as $compatibilityColumn => $sourceColumn) {
-            if (Schema::hasColumn('servicios', $compatibilityColumn)) {
-                $data[$compatibilityColumn] = $data[$sourceColumn];
-            }
-        }
-
-        if ($destino !== null && Schema::hasColumn('servicios', 'destino')) {
-            $data['destino'] = $destino;
-        }
-
-        return $data;
     }
 
     private function assertS3Configured(array $files): void

@@ -10,6 +10,11 @@ class FunerariaWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_the_homepage_redirects_guests_to_login(): void
+    {
+        $this->get('/')->assertRedirect(route('login'));
+    }
+
     public function test_user_can_sign_in_and_open_authorized_finance_module(): void
     {
         $user = User::factory()->create([

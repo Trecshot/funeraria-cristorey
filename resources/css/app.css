@@ -1,43 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
     body {
-        @apply bg-stone-50 text-stone-800 antialiased;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #f4f5fa;
+        @apply text-slate-800 antialiased;
     }
 
     h1, h2, h3 {
-        @apply font-semibold tracking-tight text-stone-900;
+        @apply font-semibold tracking-tight text-slate-900;
     }
+}
+
+.font-serif-title {
+    font-family: 'Playfair Display', serif;
+}
+
+.sidebar-bg {
+    background: linear-gradient(180deg, #17153b 0%, #1e1b4b 65%, rgba(23, 21, 59, 0.92) 100%),
+                url('https://images.unsplash.com/photo-1508615039623-a25605d2b022?auto=format&fit=crop&w=600&q=80');
+    background-position: bottom center;
+    background-size: cover;
+}
+
+.hero-banner {
+    background: linear-gradient(90deg, rgba(23, 21, 59, 0.88) 0%, rgba(49, 46, 129, 0.65) 50%, rgba(30, 27, 75, 0.75) 100%),
+                url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1400&q=80');
+    background-size: cover;
+    background-position: center;
+}
+
+.donut-chart {
+    width: 112px;
+    height: 112px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: conic-gradient(#10b981 0% 92%, #3b82f6 92% 96%, #f59e0b 96% 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.donut-inner {
+    width: 82px;
+    height: 82px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.pie-chart {
+    width: 108px;
+    height: 108px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: conic-gradient(#312e81 0% 48%, #7c3aed 48% 80%, #c4b5fd 80% 100%);
+    position: relative;
 }
 
 @layer components {
     .panel {
-        @apply rounded-xl border border-stone-200 bg-white p-5 shadow-sm;
+        @apply rounded-2xl border border-slate-100 bg-white p-6 shadow-sm;
     }
 
     .field {
-        @apply mt-1 block w-full rounded-lg border-stone-300 text-sm shadow-sm focus:border-amber-700 focus:ring-amber-700;
+        @apply mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-800 shadow-sm focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600;
     }
 
     .label {
-        @apply text-sm font-medium text-stone-700;
+        @apply block text-xs font-bold text-slate-700;
     }
 
     .button-primary {
-        @apply inline-flex items-center justify-center rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-700 focus:ring-offset-2;
+        @apply inline-flex items-center justify-center rounded-xl bg-indigo-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-700 focus:ring-offset-2;
     }
 
     .button-secondary {
-        @apply inline-flex items-center justify-center rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50;
+        @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50;
     }
 
     .table-cell {
-        @apply whitespace-nowrap px-4 py-3 text-sm text-stone-700;
+        @apply whitespace-nowrap px-4 py-3 text-xs text-slate-700;
     }
 
     .nav-link {
-        @apply whitespace-nowrap rounded-lg px-3 py-2 text-sm text-stone-600 hover:bg-stone-100 hover:text-stone-900 md:whitespace-normal;
+        @apply flex w-full items-center space-x-3.5 rounded-xl px-4 py-3 text-sm font-medium text-indigo-100 transition hover:bg-white/10;
+    }
+
+    .nav-link-active {
+        @apply flex w-full items-center space-x-3.5 rounded-xl border border-indigo-400/30 bg-indigo-500/40 px-4 py-3 text-sm font-semibold text-white transition;
     }
 }

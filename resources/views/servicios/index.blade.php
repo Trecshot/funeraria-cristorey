@@ -4,32 +4,64 @@
 @section('heading', 'Expedientes y servicios')
 
 @section('content')
-    <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <p class="text-sm text-stone-600">Registro y seguimiento de los servicios funerarios.</p>
-        <a class="button-primary" href="{{ route('servicios.create') }}">Abrir expediente</a>
-    </div>
-    <section class="panel overflow-hidden p-0">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-stone-200">
-                <thead class="bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
-                    <tr><th class="px-4 py-3">Expediente</th><th class="px-4 py-3">Contratante</th><th class="px-4 py-3">Convenio</th><th class="px-4 py-3">Cortejo</th><th class="px-4 py-3">Estado</th><th class="px-4 py-3"></th></tr>
-                </thead>
-                <tbody class="divide-y divide-stone-100">
-                    @forelse($servicios as $servicio)
-                        <tr>
-                            <td class="table-cell"><span class="font-medium">{{ $servicio->difunto }}</span><span class="block text-xs text-stone-500">{{ $servicio->folio }}</span></td>
-                            <td class="table-cell">{{ $servicio->cliente_contratante }}</td>
-                            <td class="table-cell">{{ ucfirst($servicio->convenio) }}</td>
-                            <td class="table-cell">{{ $servicio->cortejo_at?->format('d/m/Y H:i') ?? 'Sin programar' }}</td>
-                            <td class="table-cell">{{ str_replace('_', ' ', ucfirst($servicio->estado)) }}</td>
-                            <td class="table-cell"><a class="text-amber-900 underline" href="{{ route('servicios.show', $servicio) }}">Ver expediente</a></td>
-                        </tr>
-                    @empty
-                        <tr><td class="px-4 py-10 text-center text-sm text-stone-500" colspan="6">Todavía no hay expedientes.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+    <div class="space-y-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+                <h3 class="font-serif-title text-xl font-bold text-slate-900">Registro y Seguimiento de Expedientes Funerarios</h3>
+                <p class="text-xs text-slate-500 mt-1">Control de contratos, convenios previsionales (IPS / AFP 15 UF), programación de cortejos y respaldos en Amazon S3.</p>
+            </div>
+            <a class="button-primary self-start sm:self-center" href="{{ route('servicios.create') }}">
+                <i class="fa-solid fa-folder-plus mr-1.5"></i>Abrir expediente
+            </a>
         </div>
-        <div class="border-t border-stone-100 p-4">{{ $servicios->links() }}</div>
-    </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-100 text-xs">
+                    <thead class="bg-indigo-50/70 text-left text-[10px] uppercase tracking-wide text-indigo-950 font-bold">
+                        <tr>
+                            <th class="px-4 py-3.5">Expediente / Difunto</th>
+                            <th class="px-4 py-3.5">Contratante</th>
+                            <th class="px-4 py-3.5">Convenio</th>
+                            <th class="px-4 py-3.5">Cortejo</th>
+                            <th class="px-4 py-3.5">Estado</th>
+                            <th class="px-4 py-3.5 text-right">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse($servicios as $servicio)
+                            <tr class="hover:bg-slate-50/80 transition">
+                                <td class="table-cell">
+                                    <span class="font-bold text-slate-900">{{ $servicio->difunto }}</span>
+                                    <span class="block text-[10px] text-slate-400">{{ $servicio->folio }}</span>
+                                </td>
+                                <td class="table-cell">{{ $servicio->cliente_contratante }}</td>
+                                <td class="table-cell">
+                                    <span class="bg-indigo-50 text-indigo-900 border border-indigo-100 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
+                                        {{ strtoupper($servicio->convenio) }}
+                                    </span>
+                                </td>
+                                <td class="table-cell">{{ $servicio->cortejo_at?->format('d/m/Y H:i') ?? 'Sin programar' }}</td>
+                                <td class="table-cell">
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {{ $servicio->estadoBadgeClass() }}">
+                                        {{ $servicio->estadoLabel() }}
+                                    </span>
+                                </td>
+                                <td class="table-cell text-right">
+                                    <a class="text-indigo-700 font-bold hover:underline" href="{{ route('servicios.show', $servicio) }}">
+                                        Ver expediente <i class="fa-solid fa-chevron-right text-[10px] ml-0.5"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td class="px-4 py-10 text-center text-xs text-slate-500" colspan="6">Todavía no hay expedientes registrados.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="border-t border-slate-100 p-4">{{ $servicios->links() }}</div>
+        </section>
+    </div>
 @endsection

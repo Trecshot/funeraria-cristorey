@@ -3,96 +3,117 @@
 namespace App\Http\Controllers;
 
 use App\Models\MovimientoBodega;
-use App\Models\ProductoBodega;
+use App\Models\Urna;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class BodegaController extends Controller
 {
-    public function crearProducto(Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'modelo' => ['required', 'string', 'max:255'],
-            'color' => ['nullable', 'string', 'max:100'],
-            'tallado' => ['nullable', 'string', 'max:255'],
-            'ubicacion' => ['required', 'in:salon,taller'],
-            'stock' => ['required', 'integer', 'min:0'],
-            'stock_minimo' => ['required', 'integer', 'min:0'],
-        ]);
-
-        DB::transaction(function () use ($data) {
-            $producto = ProductoBodega::where('modelo', $data['modelo'])
-                ->where('color', $data['color'] ?? null)
-                ->where('tallado', $data['tallado'] ?? null)
-                ->lockForUpdate()
-                ->first();
-
-            if (! $producto) {
-                $producto = new ProductoBodega([
-                    'modelo' => $data['modelo'],
-                    'color' => $data['color'] ?? null,
-                    'tallado' => $data['tallado'] ?? null,
-                    'stock_minimo' => $data['stock_minimo'],
-                ]);
-            }
-
-            $stockColumn = $producto->stockColumn($data['ubicacion']);
-            $nuevoStock = (int) $producto->getAttribute($stockColumn) + $data['stock'];
-            $producto->setAttribute($stockColumn, $nuevoStock);
-            $producto->stock_minimo = $data['stock_minimo'];
-            if (Schema::hasColumn('productos_bodega', 'ubicacion')) {
-                $producto->ubicacion = $data['ubicacion'];
-                $producto->stock = $nuevoStock;
-            }
-            $producto->save();
-        });
-
-        return back()->with('status', 'Producto incorporado al inventario.');
-    }
-
     public function index(): View
     {
+        $urnas = Urna::orderBy('modelo')->get();
+
         return view('bodega.index', [
-            'productos' => ProductoBodega::orderBy('modelo')->get(),
+            'urnas' => $urnas,
+            'productos' => $urnas, // compatibilidad con vistas existentes
             'movimientos' => MovimientoBodega::with(['producto', 'user'])
-                ->latest()->limit(8)->get(),
+                ->latest()
+                ->limit(8)
+                ->get(),
         ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        return $this->crearProducto($request);
+    }
+
+    public function crearProducto(Request $request): RedirectResponse
+    {
+        // Generar código automático si no se ingresa manualmente
+        if (! $request->filled('codigo')) {
+            $prefijo = match ($request->input('categoria_etaria')) {
+                'Niño' => 'URN-NN',
+                'Juvenil' => 'URN-JV',
+                'Especial' => 'URN-XL',
+                default => 'URN-AD',
+            };
+            $siguienteNumero = Urna::count() + 1;
+            $request->merge([
+                'codigo' => sprintf('%s-%02d', $prefijo, $siguienteNumero),
+            ]);
+        }
+
+        // Si se envió el formulario previo con ubicación única y existencias
+        if (! $request->has('stock_salon') && ! $request->has('stock_taller')) {
+            $ubicacion = $request->input('ubicacion', 'salon');
+            $stock = (int) $request->input('stock', 0);
+            $request->merge([
+                'stock_salon' => $ubicacion === 'salon' ? $stock : 0,
+                'stock_taller' => $ubicacion === 'taller' ? $stock : 0,
+            ]);
+        }
+
+        $validated = $request->validate([
+            'codigo' => ['required', 'string', 'max:50', 'unique:urnas,codigo'],
+            'modelo' => ['required', 'string', 'max:100'],
+            'color' => ['required', 'string', 'max:50'],
+            'tallado' => ['nullable', 'string', 'max:100'],
+            'categoria_etaria' => ['required', Rule::in(Urna::CATEGORIAS_ETARIAS)],
+            'medidas_cm' => ['required', 'string', 'max:50'],
+            'personalizada' => ['nullable', 'boolean'],
+            'precio' => ['required', 'numeric', 'min:0'],
+            'stock_salon' => ['required', 'integer', 'min:0'],
+            'stock_taller' => ['required', 'integer', 'min:0'],
+            'stock_minimo' => ['required', 'integer', 'min:0'],
+            'mostrar_catalogo' => ['nullable', 'boolean'],
+        ]);
+
+        $validated['personalizada'] = $request->boolean('personalizada');
+        $validated['mostrar_catalogo'] = $request->has('mostrar_catalogo')
+            ? $request->boolean('mostrar_catalogo')
+            : true;
+        $validated['publicado'] = $validated['mostrar_catalogo'];
+
+        Urna::create($validated);
+
+        return redirect()->route('bodega.index')->with('status', 'Urna registrada exitosamente en el inventario dual.');
     }
 
     public function traspaso(Request $request): RedirectResponse
     {
+        $idKey = $request->has('urna_id') ? 'urna_id' : 'producto_id';
+
         $data = $request->validate([
-            'producto_id' => ['required', 'integer', 'exists:productos_bodega,id'],
-            'origen' => ['required', 'in:salon,taller'],
-            'destino' => ['required', 'in:salon,taller', 'different:origen'],
+            $idKey => ['required', 'integer', 'exists:urnas,id'],
+            'origen' => ['required', Rule::in(Urna::UBICACIONES)],
+            'destino' => ['required', Rule::in(Urna::UBICACIONES), 'different:origen'],
             'cantidad' => ['required', 'integer', 'min:1'],
         ]);
 
-        DB::transaction(function () use ($data, $request) {
-            $producto = ProductoBodega::whereKey($data['producto_id'])->lockForUpdate()->firstOrFail();
+        $urnaId = $data[$idKey];
 
-            $origenColumn = $producto->stockColumn($data['origen']);
-            $destinoColumn = $producto->stockColumn($data['destino']);
-            if ($producto->{$origenColumn} < $data['cantidad']) {
+        DB::transaction(function () use ($data, $urnaId, $request): void {
+            $urna = Urna::whereKey($urnaId)->lockForUpdate()->firstOrFail();
+
+            $origenColumn = $urna->stockColumn($data['origen']);
+            $destinoColumn = $urna->stockColumn($data['destino']);
+            if ($urna->{$origenColumn} < $data['cantidad']) {
                 throw ValidationException::withMessages([
-                    'cantidad' => 'No hay existencias suficientes en la ubicacion de origen.',
+                    'cantidad' => 'No hay existencias suficientes en la ubicación de origen.',
                 ]);
             }
 
-            $producto->decrement($origenColumn, $data['cantidad']);
-            $producto->increment($destinoColumn, $data['cantidad']);
-            if (Schema::hasColumn('productos_bodega', 'ubicacion')) {
-                $producto->ubicacion = $data['destino'];
-                $producto->stock = $producto->{$destinoColumn};
-                $producto->save();
-            }
+            $urna->decrement($origenColumn, $data['cantidad']);
+            $urna->increment($destinoColumn, $data['cantidad']);
 
             MovimientoBodega::create([
-                'producto_bodega_id' => $producto->id,
+                'producto_bodega_id' => $urna->id,
+                'urna_id' => $urna->id,
                 'user_id' => $request->user()->id,
                 'origen' => $data['origen'],
                 'destino' => $data['destino'],
@@ -100,6 +121,6 @@ class BodegaController extends Controller
             ]);
         });
 
-        return back()->with('status', 'Traspaso registrado correctamente.');
+        return back()->with('status', 'Traspaso registrado correctamente entre Salón y Taller.');
     }
 }

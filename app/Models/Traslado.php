@@ -7,9 +7,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Traslado extends Model
 {
+    public const IMPLEMENTOS_POR_DEFECTO = [
+        'Cruz grabada',
+        'Tarjetas',
+        'Polietileno (Nailon rural)',
+    ];
+
     protected $fillable = [
         'servicio_id', 'vehiculo_id', 'chofer_id', 'salida_at', 'cementerio',
-        'destino', 'implementos', 'estado',
+        'implementos', 'estado',
     ];
 
     protected function casts(): array
@@ -23,6 +29,11 @@ class Traslado extends Model
     public function getDestinoAttribute(): ?string
     {
         return $this->cementerio;
+    }
+
+    public function estadoLabel(): string
+    {
+        return str_replace('_', ' ', ucfirst((string) $this->estado));
     }
 
     public function servicio(): BelongsTo

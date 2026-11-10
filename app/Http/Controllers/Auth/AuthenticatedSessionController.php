@@ -30,11 +30,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if ($request->user()->role === 'chofer') {
-            return redirect()->route('movil.chofer');
-        }
-
-        return redirect()->intended(route('dashboard'));
+        return redirect()->to($request->user()->homeRoute());
     }
 
     public function destroy(Request $request): RedirectResponse
