@@ -38,6 +38,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:administrador,gerencia,asistente')->group(function () {
         Route::resource('servicios', ServicioController::class);
+        Route::patch('/servicios/{servicio}/urna', [ServicioController::class, 'asignarUrna'])
+            ->name('servicios.urna.asignar');
         Route::get('/servicios/{servicio}/documentos/{documento}', [ServicioController::class, 'descargarDocumento'])
             ->name('servicios.documentos.descargar');
 

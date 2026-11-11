@@ -58,6 +58,24 @@
         </section>
 
         <section class="panel">
+            <h2 class="font-serif-title text-lg font-bold text-slate-900"><i class="fa-solid fa-box-archive text-indigo-700 mr-1.5"></i>Logística Interna: Asignación de Urna</h2>
+            <p class="mt-1 text-xs text-slate-500">Selecciona el modelo de urna desde el inventario dual (Salón Calle Blanco o Taller de Ensamblado).</p>
+            <div class="mt-4 grid gap-4 md:grid-cols-2">
+                <label class="block">
+                    <span class="label">Urna desde bodega</span>
+                    <select class="field" name="urna_id">
+                        <option value="">-- Sin urna asignada (Pendiente) --</option>
+                        @foreach($urnas ?? [] as $u)
+                            <option value="{{ $u->id }}" @selected((string) old('urna_id', $servicio->urna_id) === (string) $u->id)>
+                                {{ $u->modelo }} · {{ $u->color }} ({{ $u->categoria_etaria }}) · Stock: {{ $u->stock_salon }} Salón / {{ $u->stock_taller }} Taller
+                            </option>
+                        @endforeach
+                    </select>
+                </label>
+            </div>
+        </section>
+
+        <section class="panel">
             <h2 class="font-serif-title text-lg font-bold text-slate-900"><i class="fa-solid fa-file-invoice-dollar text-indigo-700 mr-1.5"></i>Convenio Previsional y Liquidación</h2>
             <div class="mt-4 grid gap-4 md:grid-cols-3">
                 <label class="block">

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentoServicio;
+use App\Models\HistorialServicio;
 use App\Models\Servicio;
+use App\Models\Urna;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +26,10 @@ class ServicioController extends Controller
 
     public function create(): View
     {
-        return view('servicios.create', ['servicio' => new Servicio]);
+        return view('servicios.create', [
+            'servicio' => new Servicio,
+            'urnas' => Urna::orderBy('modelo')->get(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -41,14 +46,51 @@ class ServicioController extends Controller
 
     public function show(Servicio $servicio): View
     {
-        $servicio->load(['documentos.usuario', 'traslados.vehiculo', 'traslados.chofer']);
+        $servicio->load([
+            'documentos.usuario',
+            'traslados.vehiculo',
+            'traslados.chofer',
+            'urna',
+            'historial.usuario',
+            'liquidacion',
+            'creador',
+        ]);
 
-        return view('servicios.show', compact('servicio'));
+        $pasos = $servicio->sincronizarHitosOperativos();
+        $porcentajeAvance = $servicio->calcularPorcentajeAvance();
+        $urnasDisponibles = Urna::where(function ($query) {
+            $query->where('stock_salon', '>', 0)->orWhere('stock_taller', '>', 0);
+        })->orderBy('modelo')->get();
+
+        return view('servicios.show', compact('servicio', 'pasos', 'porcentajeAvance', 'urnasDisponibles'));
     }
 
     public function edit(Servicio $servicio): View
     {
-        return view('servicios.create', compact('servicio'));
+        return view('servicios.create', [
+            'servicio' => $servicio,
+            'urnas' => Urna::orderBy('modelo')->get(),
+        ]);
+    }
+
+    public function asignarUrna(Request $request, Servicio $servicio): RedirectResponse
+    {
+        $validated = $request->validate([
+            'urna_id' => ['required', 'exists:urnas,id'],
+        ]);
+
+        $urna = Urna::findOrFail($validated['urna_id']);
+        $servicio->urna_id = $urna->id;
+        $servicio->save();
+
+        $servicio->registrarHito(
+            HistorialServicio::HITO_LOGISTICA_URNA,
+            'Urna Asignada',
+            "Urna modelo {$urna->modelo} ({$urna->color} - {$urna->categoria_etaria}) asignada desde bodega.",
+            $request->user()->id
+        );
+
+        return redirect()->route('servicios.show', $servicio)->with('status', "Urna {$urna->modelo} asignada al expediente correctamente.");
     }
 
     public function update(Request $request, Servicio $servicio): RedirectResponse
@@ -106,6 +148,8 @@ class ServicioController extends Controller
             $this->syncTraslado($servicio, $destino);
             $this->uploadDocuments($request, $servicio, $documentos);
         });
+
+        $servicio->sincronizarHitosOperativos($request->user()->id);
     }
 
     private function validatedData(Request $request): array
@@ -118,6 +162,7 @@ class ServicioController extends Controller
             'oficio' => ['nullable', 'string', 'max:255'],
             'causa_sml' => ['nullable', 'string', 'max:5000'],
             'convenio' => ['required', Rule::in(array_keys(Servicio::CONVENIOS))],
+            'urna_id' => ['nullable', 'exists:urnas,id'],
             'monto_servicio' => ['required', 'integer', 'min:0', 'max:9999999999'],
             'cortejo_at' => ['nullable', 'date'],
             'destino' => ['nullable', 'string', 'max:255'],

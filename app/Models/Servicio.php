@@ -279,4 +279,191 @@ class Servicio extends Model
 
         return $liquidacion;
     }
+
+    public function registrarHito(
+        string $hito,
+        string $titulo,
+        ?string $descripcion = null,
+        ?int $usuarioId = null,
+        mixed $completadoAt = null
+    ): HistorialServicio {
+        return $this->historial()->updateOrCreate(
+            ['hito' => $hito],
+            [
+                'titulo' => $titulo,
+                'descripcion' => $descripcion,
+                'usuario_id' => $usuarioId ?: (auth()->id() ?: $this->created_by),
+                'completado_at' => $completadoAt ?: now(),
+            ]
+        );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function sincronizarHitosOperativos(?int $usuarioId = null): array
+    {
+        $userId = $usuarioId ?: (auth()->id() ?: $this->created_by);
+        $historialMap = $this->relationLoaded('historial')
+            ? $this->historial->keyBy('hito')
+            : $this->historial()->get()->keyBy('hito');
+
+        // Hito 1: Apertura
+        $hito1Registro = $historialMap->get(HistorialServicio::HITO_APERTURA);
+        if (! $hito1Registro && $this->exists) {
+            $hito1Registro = $this->registrarHito(
+                HistorialServicio::HITO_APERTURA,
+                'Apertura de Expediente',
+                "Expediente {$this->folio} creado para {$this->difunto_nombre}. Convenio: ".strtoupper((string) $this->convenio).'.',
+                $this->created_by ?: $userId,
+                $this->created_at ?: now()
+            );
+        }
+        $paso1 = [
+            'numero' => 1,
+            'clave' => HistorialServicio::HITO_APERTURA,
+            'nombre' => 'Apertura',
+            'titulo' => 'Apertura de Expediente',
+            'icono' => 'fa-folder-open',
+            'estado' => 'completado',
+            'fecha' => $hito1Registro?->completado_at ?? $this->created_at,
+            'responsable' => $this->creador?->name ?? 'Usuario Sistema',
+            'detalle' => "Folio: {$this->folio}",
+            'completado' => true,
+        ];
+
+        // Hito 2: Logística / Urna
+        $tieneUrna = $this->urna_id !== null && $this->urna !== null;
+        $hito2Registro = $historialMap->get(HistorialServicio::HITO_LOGISTICA_URNA);
+        if ($tieneUrna && ! $hito2Registro) {
+            $hito2Registro = $this->registrarHito(
+                HistorialServicio::HITO_LOGISTICA_URNA,
+                'Urna Asignada',
+                "Urna modelo {$this->urna->modelo} ({$this->urna->color}) asignada desde inventario.",
+                $userId,
+                $this->updated_at ?: now()
+            );
+        }
+        $paso2 = [
+            'numero' => 2,
+            'clave' => HistorialServicio::HITO_LOGISTICA_URNA,
+            'nombre' => 'Logística / Urna',
+            'titulo' => 'Asignación de Urna',
+            'icono' => 'fa-box-archive',
+            'estado' => $tieneUrna ? 'completado' : 'activo',
+            'fecha' => $tieneUrna ? ($hito2Registro?->completado_at ?? $this->updated_at) : null,
+            'responsable' => $tieneUrna ? ($hito2Registro?->usuario?->name ?? 'Bodega / Operaciones') : null,
+            'detalle' => $tieneUrna ? "Modelo: {$this->urna->modelo} ({$this->urna->color})" : 'Pendiente asignar urna',
+            'completado' => $tieneUrna,
+        ];
+
+        // Hito 3: Legal y Documental
+        $faltantes = $this->calcularDocumentosFaltantes();
+        $docs = $this->relationLoaded('documentos') ? $this->documentos : $this->documentos()->get();
+        $tieneSeremi = $docs->contains(fn ($doc) => $doc->tipo === 'resolucion_seremi');
+        $documentosCompletados = $tieneSeremi && count($faltantes) === 0;
+        $hito3Registro = $historialMap->get(HistorialServicio::HITO_DOCUMENTAL);
+        if ($documentosCompletados && ! $hito3Registro) {
+            $ultimoDoc = $docs->sortByDesc('created_at')->first();
+            $hito3Registro = $this->registrarHito(
+                HistorialServicio::HITO_DOCUMENTAL,
+                'Documentación Validada',
+                'Resolución Seremi y antecedentes legales respaldados en S3.',
+                $ultimoDoc?->uploaded_by ?: $userId,
+                $ultimoDoc?->created_at ?: now()
+            );
+        }
+        $estadoPaso3 = $documentosCompletados ? 'completado' : ($docs->isNotEmpty() || $tieneUrna ? 'activo' : 'pendiente');
+        $detallePaso3 = $documentosCompletados
+            ? 'Resolución Seremi respaldada en S3'
+            : (count($faltantes) > 0
+                ? 'Falta: '.implode(', ', array_map(fn ($t) => DocumentoServicio::TIPOS[$t] ?? $t, $faltantes))
+                : 'Pendiente cargar Resolución Seremi');
+        $paso3 = [
+            'numero' => 3,
+            'clave' => HistorialServicio::HITO_DOCUMENTAL,
+            'nombre' => 'Legal y Documental',
+            'titulo' => 'Validación Seremi / S3',
+            'icono' => 'fa-file-shield',
+            'estado' => $estadoPaso3,
+            'fecha' => $documentosCompletados ? ($hito3Registro?->completado_at ?? now()) : null,
+            'responsable' => $documentosCompletados ? ($hito3Registro?->usuario?->name ?? 'Operaciones') : null,
+            'detalle' => $detallePaso3,
+            'completado' => $documentosCompletados,
+        ];
+
+        // Hito 4: Cortejo y Flota
+        $trasladosList = $this->relationLoaded('traslados') ? $this->traslados : $this->traslados()->get();
+        $traslado = $trasladosList->sortByDesc('salida_at')->first();
+        $tieneChofer = $traslado && $traslado->chofer_id;
+        $tieneVehiculo = $traslado && $traslado->vehiculo_id;
+        $tieneFechaCortejo = $this->cortejo_at !== null;
+        $cortejoCompletado = $tieneFechaCortejo && $tieneChofer && $tieneVehiculo;
+        $hito4Registro = $historialMap->get(HistorialServicio::HITO_CORTEJO_FLOTA);
+        if ($cortejoCompletado && ! $hito4Registro) {
+            $hito4Registro = $this->registrarHito(
+                HistorialServicio::HITO_CORTEJO_FLOTA,
+                'Cortejo Programado',
+                "Vehículo {$traslado->vehiculo?->patente} con chofer {$traslado->chofer?->name} para ".$this->cortejo_at?->format('d/m/Y H:i').'.',
+                $userId,
+                $traslado->updated_at ?: now()
+            );
+        }
+        $estadoPaso4 = $cortejoCompletado
+            ? 'completado'
+            : ($tieneFechaCortejo ? 'activo' : ($documentosCompletados ? 'activo' : 'pendiente'));
+        $detallePaso4 = $cortejoCompletado
+            ? 'Chofer: '.($traslado->chofer?->name ?? 'Asignado').' · '.($traslado->vehiculo?->patente ?? 'Vehículo asignado')
+            : ($tieneFechaCortejo
+                ? 'Falta asignar '.(! $tieneChofer && ! $tieneVehiculo ? 'chofer y vehículo' : (! $tieneChofer ? 'chofer' : 'vehículo'))
+                : 'Sin programar fecha');
+        $paso4 = [
+            'numero' => 4,
+            'clave' => HistorialServicio::HITO_CORTEJO_FLOTA,
+            'nombre' => 'Cortejo y Flota',
+            'titulo' => 'Cortejo y Flota',
+            'icono' => 'fa-van-shuttle',
+            'estado' => $estadoPaso4,
+            'fecha' => $cortejoCompletado ? ($hito4Registro?->completado_at ?? $this->cortejo_at) : null,
+            'responsable' => $cortejoCompletado ? ($traslado->chofer?->name ?? 'Chofer asignado') : null,
+            'detalle' => $detallePaso4,
+            'completado' => $cortejoCompletado,
+        ];
+
+        // Hito 5: Finalizado
+        $esFinalizado = $this->estado === 'completado';
+        $hito5Registro = $historialMap->get(HistorialServicio::HITO_FINALIZADO);
+        if ($esFinalizado && ! $hito5Registro) {
+            $hito5Registro = $this->registrarHito(
+                HistorialServicio::HITO_FINALIZADO,
+                'Servicio Finalizado',
+                'Servicio ejecutado y expediente cerrado operativamente.',
+                $userId,
+                $this->updated_at ?: now()
+            );
+        }
+        $estadoPaso5 = $esFinalizado ? 'completado' : ($cortejoCompletado ? 'activo' : 'pendiente');
+        $paso5 = [
+            'numero' => 5,
+            'clave' => HistorialServicio::HITO_FINALIZADO,
+            'nombre' => 'Finalizado',
+            'titulo' => 'Servicio Concluido',
+            'icono' => 'fa-circle-check',
+            'estado' => $estadoPaso5,
+            'fecha' => $esFinalizado ? ($hito5Registro?->completado_at ?? $this->updated_at) : null,
+            'responsable' => $esFinalizado ? ($hito5Registro?->usuario?->name ?? 'Administración') : null,
+            'detalle' => $esFinalizado ? 'Expediente cerrado con éxito' : 'Pendiente de ejecución',
+            'completado' => $esFinalizado,
+        ];
+
+        return [$paso1, $paso2, $paso3, $paso4, $paso5];
+    }
+
+    public function calcularPorcentajeAvance(): int
+    {
+        $pasos = $this->sincronizarHitosOperativos();
+        $completados = count(array_filter($pasos, fn ($p) => $p['completado']));
+
+        return (int) round(($completados / count($pasos)) * 100);
+    }
 }
