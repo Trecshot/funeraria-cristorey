@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CuotaPago;
 use App\Models\DocumentoServicio;
 use App\Models\HistorialServicio;
+use App\Models\Liquidacion;
 use App\Models\Servicio;
 use App\Models\Urna;
 use Illuminate\Http\RedirectResponse;
@@ -46,13 +48,14 @@ class ServicioController extends Controller
 
     public function show(Servicio $servicio): View
     {
+        $servicio->obtenerOCrearLiquidacion();
         $servicio->load([
             'documentos.usuario',
             'traslados.vehiculo',
             'traslados.chofer',
             'urna',
             'historial.usuario',
-            'liquidacion',
+            'liquidacion.cuotas',
             'creador',
         ]);
 
@@ -144,6 +147,37 @@ class ServicioController extends Controller
         $servicio->sincronizarHitosOperativos($request->user()->id);
 
         return back()->with('status', "Documento '{$tipoLabel}' ({$nombre}) eliminado correctamente.");
+    }
+
+    public function pagarCuota(Request $request, Servicio $servicio, CuotaPago $cuota): RedirectResponse
+    {
+        $liquidacion = $servicio->obtenerOCrearLiquidacion();
+        abort_unless($cuota->liquidacion_id === $liquidacion->id, 404);
+
+        $validated = $request->validate([
+            'metodo_pago' => ['required', 'string', 'max:50'],
+            'comprobante_referencia' => ['nullable', 'string', 'max:100'],
+            'observaciones' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $cuota->update([
+            'estado' => CuotaPago::ESTADO_PAGADA,
+            'fecha_pago' => now(),
+            'metodo_pago' => $validated['metodo_pago'],
+            'comprobante_referencia' => $validated['comprobante_referencia'] ?? null,
+            'observaciones' => $validated['observaciones'] ?? null,
+        ]);
+
+        $liquidacion->recalcularEstados();
+
+        $servicio->registrarHito(
+            HistorialServicio::HITO_FINALIZADO,
+            'Pago de Cuota Registrado',
+            "Cuota #{$cuota->numero_cuota} ({$cuota->montoFormateado()}) pagada vía {$validated['metodo_pago']}.",
+            $request->user()->id
+        );
+
+        return back()->with('status', "Pago de Cuota #{$cuota->numero_cuota} ({$cuota->montoFormateado()}) registrado exitosamente.");
     }
 
     private function persistServicio(Request $request, Servicio $servicio): void

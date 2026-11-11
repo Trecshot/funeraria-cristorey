@@ -119,7 +119,7 @@
                                     @endif
                                 </a>
                             @else
-                                <button type="button" onclick="scrollHacia('seccion-contratante')" class="cursor-pointer group focus:outline-none">
+                                <button type="button" onclick="scrollHacia('seccion-estado-cuenta')" class="cursor-pointer group focus:outline-none" title="Ver Estado de Cuenta y Cierre Financiero">
                                     @if($paso['estado'] === 'completado')
                                         <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-emerald-100 transition">
                                             <i class="fa-solid fa-check"></i>
@@ -187,6 +187,10 @@
                                         <i class="fa-solid fa-van-shuttle mr-1 text-emerald-600"></i>{{ Str::limit($paso['detalle'], 18) }} &rarr;
                                     </a>
 
+                                @elseif($paso['clave'] === 'finalizado')
+                                    <button type="button" onclick="scrollHacia('seccion-estado-cuenta')" class="w-full inline-flex items-center justify-center text-[10px] {{ $servicio->liquidacion?->estado_general === 'moroso' ? 'text-rose-950 bg-rose-100 hover:bg-rose-200 border border-rose-300 font-bold' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 font-medium' }} px-2 py-1 rounded-lg transition cursor-pointer" title="Ver Estado de Cuenta y Copagos">
+                                        <i class="fa-solid fa-coins mr-1 {{ $servicio->liquidacion?->estado_general === 'moroso' ? 'text-rose-600' : 'text-slate-500' }}"></i>{{ $servicio->liquidacion?->estado_general === 'moroso' ? 'Alerta Moroso' : 'Estado Cuenta' }} &rarr;
+                                    </button>
                                 @else
                                     <span class="w-full inline-block text-[10px] text-slate-500 bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg">
                                         {{ $paso['detalle'] }}
@@ -334,89 +338,213 @@
             </section>
         </div>
 
-        <!-- PANELES DE ANTECEDENTES Y DOCUMENTACIÓN S3 -->
+        <!-- PANELES DE ANTECEDENTES, ESTADO DE CUENTA Y DOCUMENTACIÓN LEGAL -->
         <div class="grid gap-6 lg:grid-cols-2">
-            <!-- ANTECEDENTES DEL DIFUNTO Y CONTRATANTE (HITO 1) -->
-            <section id="seccion-contratante" class="panel transition-all duration-300">
-                <h2 class="font-serif-title text-base font-bold text-slate-900"><i class="fa-solid fa-clipboard-list text-indigo-700 mr-1.5"></i>Antecedentes del Contratante y Fallecido</h2>
-                <dl class="mt-4 grid grid-cols-2 gap-4 text-xs">
-                    <div><dt class="text-slate-400">Contratante</dt><dd class="mt-1 font-bold text-slate-900">{{ $servicio->cliente_contratante }}</dd></div>
-                    <div><dt class="text-slate-400">Teléfono</dt><dd class="mt-1 font-semibold">{{ $servicio->telefono_cliente ?: 'No registrado' }}</dd></div>
-                    <div><dt class="text-slate-400">Convenio</dt><dd class="mt-1"><span class="bg-indigo-50 text-indigo-900 px-2 py-0.5 rounded font-bold">{{ ucfirst($servicio->convenio) }}</span></dd></div>
-                    <div><dt class="text-slate-400">Total del servicio</dt><dd class="mt-1 font-bold text-slate-900">${{ number_format((float) $servicio->total_servicio, 0, ',', '.') }} CLP</dd></div>
-                    <div><dt class="text-slate-400">RUT Difunto</dt><dd class="mt-1 font-semibold">{{ $servicio->difunto_rut ?: 'No registrado' }}</dd></div>
-                    <div><dt class="text-slate-400">Escolaridad</dt><dd class="mt-1">{{ $servicio->escolaridad ?: 'No registrada' }}</dd></div>
-                    <div><dt class="text-slate-400">Oficio</dt><dd class="mt-1">{{ $servicio->oficio ?: 'No registrado' }}</dd></div>
-                    <div class="col-span-2"><dt class="text-slate-400">Causa SML / Fiscalía</dt><dd class="mt-1">{{ $servicio->causa_sml ?: 'Fallecimiento por causa natural (sin intervención SML)' }}</dd></div>
-                </dl>
-            </section>
+            <!-- COLUMNA IZQUIERDA: ANTECEDENTES Y ESTADO DE CUENTA (COPAGO) -->
+            <div class="space-y-6">
+                <!-- ANTECEDENTES DEL DIFUNTO Y CONTRATANTE (HITO 1) -->
+                <section id="seccion-contratante" class="panel transition-all duration-300">
+                    <h2 class="font-serif-title text-base font-bold text-slate-900"><i class="fa-solid fa-clipboard-list text-indigo-700 mr-1.5"></i>Antecedentes del Contratante y Fallecido</h2>
+                    <dl class="mt-4 grid grid-cols-2 gap-4 text-xs">
+                        <div><dt class="text-slate-400">Contratante</dt><dd class="mt-1 font-bold text-slate-900">{{ $servicio->cliente_contratante }}</dd></div>
+                        <div><dt class="text-slate-400">Teléfono</dt><dd class="mt-1 font-semibold">{{ $servicio->telefono_cliente ?: 'No registrado' }}</dd></div>
+                        <div><dt class="text-slate-400">Convenio</dt><dd class="mt-1"><span class="bg-indigo-50 text-indigo-900 px-2 py-0.5 rounded font-bold">{{ ucfirst($servicio->convenio) }}</span></dd></div>
+                        <div><dt class="text-slate-400">Total del servicio</dt><dd class="mt-1 font-bold text-slate-900">${{ number_format((float) $servicio->total_servicio, 0, ',', '.') }} CLP</dd></div>
+                        <div><dt class="text-slate-400">RUT Difunto</dt><dd class="mt-1 font-semibold">{{ $servicio->difunto_rut ?: 'No registrado' }}</dd></div>
+                        <div><dt class="text-slate-400">Escolaridad</dt><dd class="mt-1">{{ $servicio->escolaridad ?: 'No registrada' }}</dd></div>
+                        <div><dt class="text-slate-400">Oficio</dt><dd class="mt-1">{{ $servicio->oficio ?: 'No registrado' }}</dd></div>
+                        <div class="col-span-2"><dt class="text-slate-400">Causa SML / Fiscalía</dt><dd class="mt-1">{{ $servicio->causa_sml ?: 'Fallecimiento por causa natural (sin intervención SML)' }}</dd></div>
+                    </dl>
+                </section>
 
-            <!-- HITO 3: DOCUMENTACIÓN LEGAL Y ANEXOS -->
-            <section id="seccion-documentos" class="panel transition-all duration-300">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h2 class="font-serif-title text-base font-bold text-slate-900"><i class="fa-solid fa-file-contract text-indigo-700 mr-1.5"></i>Hito 3: Documentación Legal y Anexos</h2>
-                    @php $faltantes = $servicio->calcularDocumentosFaltantes(); @endphp
-                    @if(count($faltantes) === 0 && $servicio->documentos->isNotEmpty())
-                        <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center">
-                            <i class="fa-solid fa-check mr-1"></i>Completo
+                <!-- ESTADO DE CUENTA Y COPAGO (HITO 5: CIERRE FINANCIERO) -->
+                <section id="seccion-estado-cuenta" class="panel transition-all duration-300 space-y-4">
+                    @php
+                        $liquidacion = $servicio->obtenerOCrearLiquidacion();
+                        $cuotas = $liquidacion->cuotas;
+                    @endphp
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-coins"></i>
+                            </span>
+                            <div>
+                                <h2 class="font-serif-title text-base font-bold text-slate-900">Estado de Cuenta y Copago</h2>
+                                <p class="text-[11px] text-slate-400">Control de aportes previsionales y cuotas familiares</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold border {{ $liquidacion->badgeEstadoGeneralClass() }}">
+                            {{ $liquidacion->estadoGeneralLabel() }} <span class="font-normal text-[10px]">{{ $liquidacion->resumenMorosidad() }}</span>
                         </span>
-                    @else
-                        <span class="bg-amber-100 text-amber-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                            {{ count($faltantes) }} pendientes
-                        </span>
-                    @endif
-                </div>
-
-                @if($servicio->documentos->isEmpty())
-                    <div class="rounded-xl border border-dashed border-slate-300 p-4 mt-4 text-xs text-slate-500 text-center space-y-2">
-                        <i class="fa-solid fa-file-circle-exclamation text-amber-500 text-2xl block"></i>
-                        <p class="font-semibold text-slate-700">Aún no se han cargado documentos de respaldo.</p>
-                        <p class="text-[11px] text-slate-400">Carga la Resolución Seremi y antecedentes legales editando el expediente.</p>
-                        <a href="{{ route('servicios.edit', $servicio) }}" class="inline-flex items-center button-secondary text-xs mt-1">
-                            <i class="fa-solid fa-upload mr-1.5 text-indigo-600"></i>Cargar Documentos
-                        </a>
                     </div>
-                @else
-                    <ul class="mt-3 divide-y divide-slate-100">
-                        @foreach($servicio->documentos as $documento)
-                            <li class="flex flex-wrap items-center justify-between gap-2 py-3 text-xs">
-                                <div class="flex items-center gap-2.5 min-w-0">
-                                    <i class="fa-solid {{ str_ends_with(strtolower($documento->nombre_original), '.pdf') ? 'fa-file-pdf text-rose-500' : 'fa-file-image text-emerald-600' }} text-lg flex-shrink-0"></i>
-                                    <div class="min-w-0">
-                                        <p class="font-semibold text-slate-800 truncate" title="{{ $documento->nombre_original }}">{{ $documento->nombre_original }}</p>
-                                        <span class="text-slate-400 text-[11px]">
-                                            {{ $documento->tipoLabel() }}
-                                            @if($documento->pesoFormateado())
-                                                · {{ $documento->pesoFormateado() }}
+
+                    <!-- DESGLOSE ECONÓMICO -->
+                    <div class="grid grid-cols-3 gap-2 bg-slate-50/80 p-3 rounded-xl border border-slate-100 text-center">
+                        <div>
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Costo Total</span>
+                            <strong class="text-xs sm:text-sm font-bold text-slate-900 block mt-0.5">${{ number_format($liquidacion->monto_total, 0, ',', '.') }} CLP</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold truncate" title="Aporte Institucional ({{ strtoupper($servicio->convenio) }})">
+                                Aporte ({{ strtoupper($servicio->convenio) }})
+                            </span>
+                            <strong class="text-xs sm:text-sm font-bold text-emerald-700 block mt-0.5">-${{ number_format($liquidacion->monto_subvencion, 0, ',', '.') }} CLP</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Copago Familia</span>
+                            <strong class="text-xs sm:text-sm font-bold text-indigo-950 block mt-0.5">${{ number_format($liquidacion->monto_copago_familia, 0, ',', '.') }} CLP</strong>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-600 px-1">
+                        <span class="font-medium">
+                            <i class="fa-solid fa-calendar-days text-slate-400 mr-1"></i>Plan de Pago: <strong>{{ $cuotas->count() ?: 1 }} Cuotas</strong>
+                        </span>
+                        <span class="text-[11px]">
+                            Saldo pendiente: <strong class="text-rose-600 font-bold">${{ number_format($liquidacion->saldoCopagoPendiente(), 0, ',', '.') }} CLP</strong>
+                        </span>
+                    </div>
+
+                    <!-- HISTORIAL DE CUOTAS -->
+                    <div class="border-t border-slate-100 pt-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Historial de Cuotas</h4>
+                            @if($liquidacion->saldoCopagoPendiente() > 0)
+                                <button type="button" onclick="abrirModalPagoRapido()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center">
+                                    <i class="fa-solid fa-credit-card mr-1"></i>Registrar Pago
+                                </button>
+                            @endif
+                        </div>
+
+                        @if($cuotas->isEmpty())
+                            <div class="text-center py-3 text-xs text-slate-400 italic">
+                                No hay plan de cuotas registrado para este expediente.
+                            </div>
+                        @else
+                            <div class="space-y-2">
+                                @foreach($cuotas as $cuota)
+                                    <div class="p-2.5 rounded-xl border flex items-center justify-between gap-2 {{ $cuota->estaAtrasada() ? 'border-rose-200 bg-rose-50/40' : ($cuota->estado === 'pagada' ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-100 bg-white') }}">
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-xs font-bold text-slate-900">Cuota {{ $cuota->numero_cuota }}</span>
+                                                <span class="text-[11px] text-slate-500 font-mono">
+                                                    @if($cuota->estado === 'pagada')
+                                                        (Pagada: {{ $cuota->fecha_pago?->format('d/m/Y') }})
+                                                    @elseif($cuota->estaAtrasada())
+                                                        <span class="text-rose-600 font-semibold">(Venció: {{ $cuota->fecha_vencimiento->format('d/m/Y') }})</span>
+                                                    @else
+                                                        (Vence: {{ $cuota->fecha_vencimiento->format('d/m/Y') }})
+                                                    @endif
+                                                </span>
+                                            </div>
+                                            <div class="text-[11px] text-slate-600 font-bold mt-0.5">
+                                                {{ $cuota->montoFormateado() }}
+                                                @if($cuota->metodo_pago)
+                                                    <span class="text-[10px] text-slate-400 font-normal">· {{ $cuota->metodo_pago }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border {{ $cuota->badgeClass() }}">
+                                                {{ $cuota->estadoLabel() }}
+                                            </span>
+                                            @if($cuota->estado !== 'pagada')
+                                                <button type="button" onclick="pagarCuotaDirecto({{ $cuota->id }}, {{ $cuota->numero_cuota }}, {{ $cuota->monto_cuota }}, '{{ route('servicios.cuotas.pagar', [$servicio, $cuota]) }}')" class="px-2 py-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition" title="Registrar pago de esta cuota">
+                                                    Pagar
+                                                </button>
                                             @endif
-                                        </span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <a class="px-2.5 py-1 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg font-semibold hover:underline text-[11px] inline-flex items-center" href="{{ route('servicios.documentos.descargar', [$servicio, $documento, 'inline' => 1]) }}" target="_blank" rel="noopener noreferrer" title="Previsualizar en nueva pestaña">
-                                        <i class="fa-regular fa-eye mr-1"></i>Ver
-                                    </a>
-                                    <a class="px-2.5 py-1 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium text-[11px] inline-flex items-center" href="{{ route('servicios.documentos.descargar', [$servicio, $documento]) }}" title="Descargar archivo original">
-                                        <i class="fa-solid fa-download mr-1"></i>Descargar
-                                    </a>
-                                    <form action="{{ route('servicios.documentos.destroy', [$servicio, $documento]) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este documento del expediente?')" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded" title="Eliminar documento">
-                                            <i class="fa-regular fa-trash-can"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
-                    <div class="pt-2 text-right">
-                        <a href="{{ route('servicios.edit', $servicio) }}" class="text-[11px] text-indigo-600 hover:underline inline-flex items-center font-medium">
-                            <i class="fa-solid fa-plus-circle mr-1"></i>Cargar o reemplazar documentos
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        @if($liquidacion->saldoCopagoPendiente() > 0)
+                            <button type="button" onclick="abrirModalPagoRapido()" class="button-primary text-xs py-1.5 px-3">
+                                <i class="fa-solid fa-receipt mr-1.5"></i>Registrar Pago
+                            </button>
+                        @else
+                            <span class="text-xs text-emerald-700 font-bold flex items-center">
+                                <i class="fa-solid fa-circle-check mr-1.5"></i>Copago familiar saldado en su totalidad
+                            </span>
+                        @endif
+                        <a href="{{ route('finanzas.index') }}" class="button-secondary text-xs py-1.5 px-3">
+                            Ver en Módulo de Finanzas &rarr;
                         </a>
                     </div>
-                @endif
-            </section>
+                </section>
+            </div>
+
+            <!-- COLUMNA DERECHA: HITO 3: DOCUMENTACIÓN LEGAL Y ANEXOS -->
+            <div class="space-y-6">
+                <section id="seccion-documentos" class="panel transition-all duration-300">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h2 class="font-serif-title text-base font-bold text-slate-900"><i class="fa-solid fa-file-contract text-indigo-700 mr-1.5"></i>Hito 3: Documentación Legal y Anexos</h2>
+                        @php $faltantes = $servicio->calcularDocumentosFaltantes(); @endphp
+                        @if(count($faltantes) === 0 && $servicio->documentos->isNotEmpty())
+                            <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center">
+                                <i class="fa-solid fa-check mr-1"></i>Completo
+                            </span>
+                        @else
+                            <span class="bg-amber-100 text-amber-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                                {{ count($faltantes) }} pendientes
+                            </span>
+                        @endif
+                    </div>
+
+                    @if($servicio->documentos->isEmpty())
+                        <div class="rounded-xl border border-dashed border-slate-300 p-4 mt-4 text-xs text-slate-500 text-center space-y-2">
+                            <i class="fa-solid fa-file-circle-exclamation text-amber-500 text-2xl block"></i>
+                            <p class="font-semibold text-slate-700">Aún no se han cargado documentos de respaldo.</p>
+                            <p class="text-[11px] text-slate-400">Carga la Resolución Seremi y antecedentes legales editando el expediente.</p>
+                            <a href="{{ route('servicios.edit', $servicio) }}" class="inline-flex items-center button-secondary text-xs mt-1">
+                                <i class="fa-solid fa-upload mr-1.5 text-indigo-600"></i>Cargar Documentos
+                            </a>
+                        </div>
+                    @else
+                        <ul class="mt-3 divide-y divide-slate-100">
+                            @foreach($servicio->documentos as $documento)
+                                <li class="flex flex-wrap items-center justify-between gap-2 py-3 text-xs">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <i class="fa-solid {{ str_ends_with(strtolower($documento->nombre_original), '.pdf') ? 'fa-file-pdf text-rose-500' : 'fa-file-image text-emerald-600' }} text-lg flex-shrink-0"></i>
+                                        <div class="min-w-0">
+                                            <p class="font-semibold text-slate-800 truncate" title="{{ $documento->nombre_original }}">{{ $documento->nombre_original }}</p>
+                                            <span class="text-slate-400 text-[11px]">
+                                                {{ $documento->tipoLabel() }}
+                                                @if($documento->pesoFormateado())
+                                                    · {{ $documento->pesoFormateado() }}
+                                                @endif
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <a class="px-2.5 py-1 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg font-semibold hover:underline text-[11px] inline-flex items-center" href="{{ route('servicios.documentos.descargar', [$servicio, $documento, 'inline' => 1]) }}" target="_blank" rel="noopener noreferrer" title="Previsualizar en nueva pestaña">
+                                            <i class="fa-regular fa-eye mr-1"></i>Ver
+                                        </a>
+                                        <a class="px-2.5 py-1 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium text-[11px] inline-flex items-center" href="{{ route('servicios.documentos.descargar', [$servicio, $documento]) }}" title="Descargar archivo original">
+                                            <i class="fa-solid fa-download mr-1"></i>Descargar
+                                        </a>
+                                        <form action="{{ route('servicios.documentos.destroy', [$servicio, $documento]) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este documento del expediente?')" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded" title="Eliminar documento">
+                                                <i class="fa-regular fa-trash-can"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                        <div class="pt-2 text-right">
+                            <a href="{{ route('servicios.edit', $servicio) }}" class="text-[11px] text-indigo-600 hover:underline inline-flex items-center font-medium">
+                                <i class="fa-solid fa-plus-circle mr-1"></i>Cargar o reemplazar documentos
+                            </a>
+                        </div>
+                    @endif
+                </section>
+            </div>
         </div>
 
         <!-- HISTORIAL DE AUDITORÍA Y TRAZABILIDAD CRONOLÓGICA -->
@@ -586,10 +714,119 @@
         </div>
     </div>
 
+    <!-- MODAL REGISTRO RÁPIDO DE PAGO DE CUOTA -->
+    <div id="modal-pago-cuota" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-receipt"></i>
+                    </span>
+                    <div>
+                        <h3 class="font-serif-title text-base font-bold text-slate-900">Registrar Pago de Cuota</h3>
+                        <p class="text-[11px] text-slate-400">Expediente #{{ $servicio->id }} · {{ $servicio->cliente_contratante }}</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModalPagoRapido()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="form-pago-cuota" method="POST" action="" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Cuota a pagar</label>
+                    <select id="modal-select-cuota" name="cuota_id" class="field w-full text-xs" onchange="actualizarMontoModal(this)">
+                        @foreach($servicio->liquidacion?->cuotas ?? [] as $cuota)
+                            <option value="{{ $cuota->id }}"
+                                    data-url="{{ route('servicios.cuotas.pagar', [$servicio, $cuota]) }}"
+                                    @disabled($cuota->estado === 'pagada')>
+                                Cuota {{ $cuota->numero_cuota }} — {{ $cuota->montoFormateado() }} ({{ $cuota->estadoLabel() }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Método de pago *</label>
+                    <select name="metodo_pago" class="field w-full text-xs" required>
+                        @foreach(\App\Models\Liquidacion::METODOS_PAGO as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Comprobante / N° Transacción (Opcional)</label>
+                    <input type="text" name="comprobante_referencia" class="field w-full text-xs" placeholder="Ej: Transf. 984723 o Transbank OP #5432">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Observaciones</label>
+                    <textarea name="observaciones" rows="2" class="field w-full text-xs" placeholder="Detalles adicionales del abono..."></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="cerrarModalPagoRapido()" class="button-secondary text-xs">Cancelar</button>
+                    <button type="submit" class="button-primary text-xs">
+                        <i class="fa-solid fa-check mr-1.5"></i>Confirmar Pago
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
 <script>
+    // Modal de Pago Rápido de Cuota
+    function abrirModalPagoRapido() {
+        const modal = document.getElementById('modal-pago-cuota');
+        const select = document.getElementById('modal-select-cuota');
+        const form = document.getElementById('form-pago-cuota');
+        if (modal && select && form) {
+            const firstPending = Array.from(select.options).find(opt => !opt.disabled);
+            if (firstPending) {
+                select.value = firstPending.value;
+                form.action = firstPending.dataset.url;
+            }
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function pagarCuotaDirecto(cuotaId, numeroCuota, monto, actionUrl) {
+        const modal = document.getElementById('modal-pago-cuota');
+        const select = document.getElementById('modal-select-cuota');
+        const form = document.getElementById('form-pago-cuota');
+        if (modal && select && form) {
+            select.value = cuotaId;
+            form.action = actionUrl;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function cerrarModalPagoRapido() {
+        const modal = document.getElementById('modal-pago-cuota');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+    }
+
+    function actualizarMontoModal(select) {
+        const option = select.options[select.selectedIndex];
+        const form = document.getElementById('form-pago-cuota');
+        if (option && form && option.dataset.url) {
+            form.action = option.dataset.url;
+        }
+    }
+
+    document.getElementById('modal-pago-cuota')?.addEventListener('click', function(e) {
+        if (e.target === this) cerrarModalPagoRapido();
+    });
     // Smooth scroll y resaltado de la sección destino
     function scrollHacia(idElemento) {
         const elemento = document.getElementById(idElemento);

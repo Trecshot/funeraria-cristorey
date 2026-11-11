@@ -44,6 +44,8 @@ Route::middleware('auth')->group(function () {
             ->name('servicios.documentos.descargar');
         Route::delete('/servicios/{servicio}/documentos/{documento}', [ServicioController::class, 'eliminarDocumento'])
             ->name('servicios.documentos.destroy');
+        Route::post('/servicios/{servicio}/cuotas/{cuota}/pagar', [ServicioController::class, 'pagarCuota'])
+            ->name('servicios.cuotas.pagar');
 
         Route::get('/flota/calendario', [FlotaController::class, 'calendario'])
             ->name('flota.calendario');
