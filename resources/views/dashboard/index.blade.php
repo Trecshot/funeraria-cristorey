@@ -127,7 +127,7 @@
             <div class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between gap-2 mb-3">
-                        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-chart-column text-indigo-700 mr-2"></i>Resumen General (Pico Julio: 62)</h3>
+                        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-chart-column text-indigo-700 mr-2"></i>Resumen General (Máximo Julio: 62)</h3>
                         <span class="text-[11px] border rounded-lg px-2.5 py-0.5 text-slate-500 whitespace-nowrap">Últimos 6 Meses</span>
                     </div>
                     <div class="flex items-center justify-center space-x-5 text-xs mb-4">
