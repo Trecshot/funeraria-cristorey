@@ -20,7 +20,7 @@ class ServicioController extends Controller
     public function index(): View
     {
         return view('servicios.index', [
-            'servicios' => Servicio::with('creador')->latest()->paginate(12),
+            'servicios' => Servicio::with(['creador', 'urna', 'traslados.chofer', 'traslados.vehiculo', 'documentos', 'historial'])->latest()->paginate(12),
         ]);
     }
 

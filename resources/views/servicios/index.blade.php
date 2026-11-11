@@ -43,9 +43,16 @@
                                 </td>
                                 <td class="table-cell">{{ $servicio->cortejo_at?->format('d/m/Y H:i') ?? 'Sin programar' }}</td>
                                 <td class="table-cell">
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {{ $servicio->estadoBadgeClass() }}">
-                                        {{ $servicio->estadoLabel() }}
-                                    </span>
+                                    @php $porcentaje = $servicio->calcularPorcentajeAvance(); @endphp
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $servicio->estadoBadgeClass() }}">
+                                            {{ $servicio->estadoLabel() }}
+                                        </span>
+                                        <span class="text-[10px] text-slate-500 font-semibold">{{ $porcentaje }}%</span>
+                                    </div>
+                                    <div class="w-24 bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden border border-slate-200">
+                                        <div class="bg-gradient-to-r from-indigo-600 to-emerald-500 h-1.5 rounded-full" style="width: {{ $porcentaje }}%;"></div>
+                                    </div>
                                 </td>
                                 <td class="table-cell text-right">
                                     <a class="text-indigo-700 font-bold hover:underline" href="{{ route('servicios.show', $servicio) }}">
