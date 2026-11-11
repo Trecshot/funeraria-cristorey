@@ -230,3 +230,8 @@ Ocurre si Laravel intenta conectar antes de que MySQL termine de inicializar, o 
   ```bash
   docker compose exec laravel.test npm run build
   ```
+
+---
+
+## 🤝 Flujo de Trabajo y Convenciones de Commits
+Para conocer las normas de trabajo en equipo, prefijos de commits (`feat:`, `fix:`, `style:`, etc.) y buenas prácticas colaborativas, consulta la [Guía de Contribución](CONTRIBUTING.md).
