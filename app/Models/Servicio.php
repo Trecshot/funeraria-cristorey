@@ -277,6 +277,10 @@ class Servicio extends Model
             }
         }
 
+        if ($liquidacion->cuotas()->doesntExist() && $liquidacion->monto_copago_familia > 0) {
+            $liquidacion->generarPlanCuotas(2);
+        }
+
         return $liquidacion;
     }
 
