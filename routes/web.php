@@ -71,7 +71,10 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:administrador,gerencia,finanzas')->group(function () {
         Route::get('/finanzas', [FinanzaController::class, 'index'])->name('finanzas.index');
+        Route::patch('/finanzas/liquidaciones/{servicio}', [FinanzaController::class, 'actualizarLiquidacion'])->name('finanzas.liquidaciones.update');
         Route::get('/finanzas/comprobante/{servicio}', [FinanzaController::class, 'generarPdf'])->name('finanzas.pdf');
+        Route::get('/finanzas/factura-exenta/{servicio}', [FinanzaController::class, 'generarFacturaExentaPdf'])->name('finanzas.factura_exenta');
+        Route::get('/finanzas/boleta-copago/{servicio}', [FinanzaController::class, 'generarBoletaPdf'])->name('finanzas.boleta_copago');
     });
 
     Route::middleware('role:administrador,gerencia,chofer')->group(function () {

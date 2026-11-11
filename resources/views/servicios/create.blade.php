@@ -6,7 +6,7 @@
 @section('content')
     @php
         $convenio = old('convenio', $servicio->convenio ?? 'particular');
-        $ufValue = config('funeraria.uf_value_clp');
+        $ufValue = config('funeraria.uf_value_clp') ?: app(\App\Services\IndicadoresService::class)->getValorUF();
     @endphp
     <form method="POST" action="{{ $servicio->exists ? route('servicios.update', $servicio) : route('servicios.store') }}" enctype="multipart/form-data" class="space-y-6">
         @csrf

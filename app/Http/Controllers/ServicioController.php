@@ -102,6 +102,7 @@ class ServicioController extends Controller
 
         DB::transaction(function () use ($request, $servicio, $destino, $documentos): void {
             $servicio->save();
+            $servicio->obtenerOCrearLiquidacion();
             $this->syncTraslado($servicio, $destino);
             $this->uploadDocuments($request, $servicio, $documentos);
         });

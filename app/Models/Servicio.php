@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Services\IndicadoresService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 
 class Servicio extends Model
@@ -149,37 +151,122 @@ class Servicio extends Model
             ->values();
     }
 
-    public function aporteConvenio(): ?float
+    public function liquidacion(): HasOne
     {
-        return in_array($this->convenio, ['particular', 'ips'], true)
-            || ($this->convenio === 'afp' && ($this->uf_value_clp || config('funeraria.uf_value_clp')))
-            ? (float) $this->aporte_convenio
-            : null;
+        return $this->hasOne(Liquidacion::class, 'servicio_id');
     }
 
-    public function copagoEstimado(): ?float
+    public function getCopagoEstimadoAttribute(): ?int
     {
-        return $this->aporteConvenio() === null ? null : (float) $this->copago;
+        $copago = $this->copagoEstimado();
+
+        return $copago !== null ? (int) round($copago) : null;
     }
 
-    public function calcularAportes(): void
+    public function getAporteConvenioEstimadoAttribute(): ?int
     {
-        $ufValue = $this->convenio === 'afp'
-            ? (int) round((float) ($this->uf_value_clp ?: config('funeraria.uf_value_clp')))
-            : null;
+        $aporte = $this->aporteConvenio();
 
-        $aporte = match ($this->convenio) {
+        return $aporte !== null ? (int) round($aporte) : null;
+    }
+
+    public function aporteConvenio(?float $valorUf = null): ?float
+    {
+        $convenio = strtolower((string) $this->convenio);
+
+        if ($convenio === 'particular') {
+            return 0.0;
+        }
+
+        if ($convenio === 'ips') {
+            return (float) self::APORTE_IPS_CLP;
+        }
+
+        if ($convenio === 'afp') {
+            $uf = $valorUf ?: ($this->uf_value_clp ?: app(IndicadoresService::class)->getValorUF());
+            if (! $uf) {
+                return null;
+            }
+
+            return (float) round(self::APORTE_AFP_UF * $uf);
+        }
+
+        if (in_array($convenio, ['dipreca', 'sindicato'], true)) {
+            return $this->aporte_convenio > 0 ? (float) $this->aporte_convenio : null;
+        }
+
+        return (float) ($this->aporte_convenio ?: 0);
+    }
+
+    public function copagoEstimado(?float $valorUf = null): ?float
+    {
+        $aporte = $this->aporteConvenio($valorUf);
+        if ($aporte === null) {
+            return null;
+        }
+
+        return (float) max(0, (int) $this->monto_servicio - (int) round($aporte));
+    }
+
+    public function calcularAportes(?float $valorUf = null): void
+    {
+        $convenio = strtolower((string) $this->convenio);
+        $ufValue = null;
+
+        if ($convenio === 'afp') {
+            $ufValue = (int) round((float) ($valorUf ?: ($this->uf_value_clp ?: app(IndicadoresService::class)->getValorUF())));
+        }
+
+        $aporte = match ($convenio) {
             'ips' => self::APORTE_IPS_CLP,
-            'afp' => $ufValue ? self::APORTE_AFP_UF * $ufValue : 0,
-            default => 0,
+            'afp' => $ufValue ? (int) round(self::APORTE_AFP_UF * $ufValue) : 0,
+            default => (int) ($this->aporte_convenio ?: 0),
         };
-        $convenioConAporteConocido = in_array($this->convenio, ['particular', 'ips'], true)
-            || ($this->convenio === 'afp' && $ufValue);
+
+        $convenioConAporteConocido = in_array($convenio, ['particular', 'ips'], true)
+            || ($convenio === 'afp' && $ufValue);
 
         $this->uf_value_clp = $ufValue;
         $this->aporte_convenio = $aporte;
         $this->copago = $convenioConAporteConocido
             ? max(0, (int) $this->monto_servicio - $aporte)
             : (int) $this->monto_servicio;
+    }
+
+    public function obtenerOCrearLiquidacion(?float $valorUf = null): Liquidacion
+    {
+        $aporte = (int) round($this->aporteConvenio($valorUf) ?? 0);
+        $copago = (int) round($this->copagoEstimado($valorUf) ?? $this->monto_servicio);
+
+        $liquidacion = $this->relationLoaded('liquidacion') ? $this->getRelation('liquidacion') : $this->liquidacion;
+
+        if (! $liquidacion) {
+            $liquidacion = $this->liquidacion()->create([
+                'monto_total' => (int) $this->monto_servicio,
+                'monto_subvencion' => $aporte,
+                'monto_copago_familia' => $copago,
+                'monto_copago_pagado' => 0,
+                'estado_subvencion' => 'tramitacion',
+                'estado_copago' => 'pendiente',
+                'folio_factura' => 'FE-'.str_pad((string) $this->id, 5, '0', STR_PAD_LEFT),
+                'folio_boleta' => 'BE-'.str_pad((string) $this->id, 5, '0', STR_PAD_LEFT),
+            ]);
+            $this->setRelation('liquidacion', $liquidacion);
+        } else {
+            if ($liquidacion->monto_total === 0 || $liquidacion->estado_subvencion === 'tramitacion') {
+                $liquidacion->monto_total = (int) $this->monto_servicio;
+                $liquidacion->monto_subvencion = $aporte;
+                $liquidacion->monto_copago_familia = $copago;
+                if (! $liquidacion->folio_factura) {
+                    $liquidacion->folio_factura = 'FE-'.str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+                }
+                if (! $liquidacion->folio_boleta) {
+                    $liquidacion->folio_boleta = 'BE-'.str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+                }
+                $liquidacion->save();
+            }
+        }
+
+        return $liquidacion;
     }
 }
