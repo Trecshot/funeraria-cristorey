@@ -8,7 +8,7 @@
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
                 <h3 class="font-serif-title text-xl font-bold text-slate-900">Registro y Seguimiento de Expedientes Funerarios</h3>
-                <p class="text-xs text-slate-500 mt-1">Control de contratos, convenios previsionales (IPS / AFP 15 UF), programación de cortejos y respaldos en Amazon S3.</p>
+                <p class="text-xs text-slate-500 mt-1">Control de contratos, convenios previsionales (IPS / AFP 15 UF), programación de cortejos y archivo documental legal.</p>
             </div>
             <a class="button-primary self-start sm:self-center" href="{{ route('servicios.create') }}">
                 <i class="fa-solid fa-folder-plus mr-1.5"></i>Abrir expediente

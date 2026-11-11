@@ -23,7 +23,7 @@
                                             Servicio #{{ $servicio->id }} (Difunto: {{ $servicio->difunto }}) — Cortejo {{ $servicio->cortejo_at->format('H:i') }} hrs
                                         </h4>
                                         <p class="text-rose-700">
-                                            Falta adjuntar: <strong>{{ collect($servicio->documentosFaltantes)->map(fn ($tipo) => \App\Models\DocumentoServicio::ALERT_LABELS[$tipo] ?? $tipo)->join(' y ') }}</strong> en Amazon S3.
+                                            Falta adjuntar: <strong>{{ collect($servicio->documentosFaltantes)->map(fn ($tipo) => \App\Models\DocumentoServicio::ALERT_LABELS[$tipo] ?? $tipo)->join(' y ') }}</strong> en el expediente.
                                         </p>
                                     </div>
                                     @if(auth()->user()->hasRole('administrador', 'gerencia', 'asistente'))

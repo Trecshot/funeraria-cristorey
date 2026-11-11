@@ -87,7 +87,7 @@
                                     @endif
                                 </button>
                             @elseif($paso['clave'] === 'documental')
-                                <button type="button" onclick="scrollHacia('seccion-documentos')" class="cursor-pointer group focus:outline-none" title="Gestionar documentación Seremi en S3">
+                                <button type="button" onclick="scrollHacia('seccion-documentos')" class="cursor-pointer group focus:outline-none" title="Gestionar documentación legal y anexos">
                                     @if($paso['estado'] === 'completado')
                                         <div class="w-10 h-10 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-emerald-100 transition transform group-hover:scale-105">
                                             <i class="fa-solid fa-check"></i>
@@ -351,10 +351,10 @@
                 </dl>
             </section>
 
-            <!-- HITO 3: DOCUMENTACIÓN EN AMAZON S3 -->
+            <!-- HITO 3: DOCUMENTACIÓN LEGAL Y ANEXOS -->
             <section id="seccion-documentos" class="panel transition-all duration-300">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h2 class="font-serif-title text-base font-bold text-slate-900"><i class="fa-solid fa-cloud-arrow-down text-indigo-700 mr-1.5"></i>Hito 3: Documentación Legal (S3)</h2>
+                    <h2 class="font-serif-title text-base font-bold text-slate-900"><i class="fa-solid fa-file-contract text-indigo-700 mr-1.5"></i>Hito 3: Documentación Legal y Anexos</h2>
                     @php $faltantes = $servicio->calcularDocumentosFaltantes(); @endphp
                     @if(count($faltantes) === 0 && $servicio->documentos->isNotEmpty())
                         <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center">
@@ -370,8 +370,8 @@
                 @if($servicio->documentos->isEmpty())
                     <div class="rounded-xl border border-dashed border-slate-300 p-4 mt-4 text-xs text-slate-500 text-center space-y-2">
                         <i class="fa-solid fa-file-circle-exclamation text-amber-500 text-2xl block"></i>
-                        <p class="font-semibold text-slate-700">Aún no se han cargado documentos en Amazon S3.</p>
-                        <p class="text-[11px] text-slate-400">Carga la Resolución Seremi editando el expediente.</p>
+                        <p class="font-semibold text-slate-700">Aún no se han cargado documentos de respaldo.</p>
+                        <p class="text-[11px] text-slate-400">Carga la Resolución Seremi y antecedentes legales editando el expediente.</p>
                         <a href="{{ route('servicios.edit', $servicio) }}" class="inline-flex items-center button-secondary text-xs mt-1">
                             <i class="fa-solid fa-upload mr-1.5 text-indigo-600"></i>Cargar Documentos
                         </a>
@@ -379,18 +379,42 @@
                 @else
                     <ul class="mt-3 divide-y divide-slate-100">
                         @foreach($servicio->documentos as $documento)
-                            <li class="flex flex-wrap items-center justify-between gap-2 py-2.5 text-xs">
-                                <span>
-                                    <i class="fa-solid fa-file-shield text-indigo-700 mr-1.5"></i>
-                                    <strong class="text-slate-800">{{ $documento->nombre_original }}</strong>
-                                    <span class="text-slate-400 text-[11px]">· {{ $documento->tipoLabel() }}</span>
-                                </span>
-                                <a class="text-indigo-700 font-bold hover:underline text-[11px]" href="{{ route('servicios.documentos.descargar', [$servicio, $documento]) }}">
-                                    <i class="fa-solid fa-download mr-1"></i>Descargar
-                                </a>
+                            <li class="flex flex-wrap items-center justify-between gap-2 py-3 text-xs">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <i class="fa-solid {{ str_ends_with(strtolower($documento->nombre_original), '.pdf') ? 'fa-file-pdf text-rose-500' : 'fa-file-image text-emerald-600' }} text-lg flex-shrink-0"></i>
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-slate-800 truncate" title="{{ $documento->nombre_original }}">{{ $documento->nombre_original }}</p>
+                                        <span class="text-slate-400 text-[11px]">
+                                            {{ $documento->tipoLabel() }}
+                                            @if($documento->pesoFormateado())
+                                                · {{ $documento->pesoFormateado() }}
+                                            @endif
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <a class="px-2.5 py-1 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg font-semibold hover:underline text-[11px] inline-flex items-center" href="{{ route('servicios.documentos.descargar', [$servicio, $documento, 'inline' => 1]) }}" target="_blank" rel="noopener noreferrer" title="Previsualizar en nueva pestaña">
+                                        <i class="fa-regular fa-eye mr-1"></i>Ver
+                                    </a>
+                                    <a class="px-2.5 py-1 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium text-[11px] inline-flex items-center" href="{{ route('servicios.documentos.descargar', [$servicio, $documento]) }}" title="Descargar archivo original">
+                                        <i class="fa-solid fa-download mr-1"></i>Descargar
+                                    </a>
+                                    <form action="{{ route('servicios.documentos.destroy', [$servicio, $documento]) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este documento del expediente?')" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded" title="Eliminar documento">
+                                            <i class="fa-regular fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </li>
                         @endforeach
                     </ul>
+                    <div class="pt-2 text-right">
+                        <a href="{{ route('servicios.edit', $servicio) }}" class="text-[11px] text-indigo-600 hover:underline inline-flex items-center font-medium">
+                            <i class="fa-solid fa-plus-circle mr-1"></i>Cargar o reemplazar documentos
+                        </a>
+                    </div>
                 @endif
             </section>
         </div>
