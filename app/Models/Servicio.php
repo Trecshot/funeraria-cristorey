@@ -35,7 +35,7 @@ class Servicio extends Model
     protected $fillable = [
         'folio', 'created_by', 'cliente_nombre', 'cliente_rut', 'cliente_telefono',
         'difunto_nombre', 'difunto_rut', 'escolaridad', 'oficio', 'causa_sml',
-        'requiere_sml', 'convenio', 'monto_servicio', 'aporte_convenio', 'copago',
+        'requiere_sml', 'convenio', 'urna_id', 'monto_servicio', 'aporte_convenio', 'copago',
         'uf_value_clp', 'cortejo_at', 'estado',
     ];
 
@@ -92,6 +92,16 @@ class Servicio extends Model
             'cancelado' => 'bg-rose-100 text-rose-800',
             default => 'bg-blue-100 text-blue-800',
         };
+    }
+
+    public function urna(): BelongsTo
+    {
+        return $this->belongsTo(Urna::class, 'urna_id');
+    }
+
+    public function historial(): HasMany
+    {
+        return $this->hasMany(HistorialServicio::class, 'servicio_id')->orderBy('completado_at', 'asc')->orderBy('id', 'asc');
     }
 
     public function documentos(): HasMany
