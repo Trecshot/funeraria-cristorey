@@ -31,7 +31,7 @@ class HistorialServicio extends Model
         self::HITO_DOCUMENTAL => [
             'numero' => 3,
             'nombre' => 'Legal y Documental',
-            'titulo' => 'Validación Seremi y Respaldo S3',
+            'titulo' => 'Validación Seremi y Documentación Legal',
             'icono' => 'fa-file-shield',
         ],
         self::HITO_CORTEJO_FLOTA => [

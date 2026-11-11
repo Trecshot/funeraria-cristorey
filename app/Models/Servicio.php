@@ -368,14 +368,14 @@ class Servicio extends Model
             $hito3Registro = $this->registrarHito(
                 HistorialServicio::HITO_DOCUMENTAL,
                 'Documentación Validada',
-                'Resolución Seremi y antecedentes legales respaldados en S3.',
+                'Resolución Seremi y antecedentes legales verificados en el expediente digital.',
                 $ultimoDoc?->uploaded_by ?: $userId,
                 $ultimoDoc?->created_at ?: now()
             );
         }
         $estadoPaso3 = $documentosCompletados ? 'completado' : ($docs->isNotEmpty() || $tieneUrna ? 'activo' : 'pendiente');
         $detallePaso3 = $documentosCompletados
-            ? 'Resolución Seremi respaldada en S3'
+            ? 'Resolución Seremi y antecedentes verificados'
             : (count($faltantes) > 0
                 ? 'Falta: '.implode(', ', array_map(fn ($t) => DocumentoServicio::TIPOS[$t] ?? $t, $faltantes))
                 : 'Pendiente cargar Resolución Seremi');
@@ -383,7 +383,7 @@ class Servicio extends Model
             'numero' => 3,
             'clave' => HistorialServicio::HITO_DOCUMENTAL,
             'nombre' => 'Legal y Documental',
-            'titulo' => 'Validación Seremi / S3',
+            'titulo' => 'Validación Seremi / Legal',
             'icono' => 'fa-file-shield',
             'estado' => $estadoPaso3,
             'fecha' => $documentosCompletados ? ($hito3Registro?->completado_at ?? now()) : null,
