@@ -65,6 +65,8 @@ class ServicioController extends Controller
 
     public function edit(Servicio $servicio): View
     {
+        $servicio->load(['documentos.usuario', 'urna']);
+
         return view('servicios.create', [
             'servicio' => $servicio,
             'urnas' => Urna::orderBy('modelo')->get(),
@@ -101,8 +103,8 @@ class ServicioController extends Controller
     public function destroy(Servicio $servicio): RedirectResponse
     {
         foreach ($servicio->documentos as $documento) {
-            if (! Storage::disk($documento->disk)->delete($documento->path)) {
-                abort(503, 'No se pudo eliminar un documento privado. El expediente se conservó.');
+            if ($documento->path && Storage::disk($documento->disk)->exists($documento->path)) {
+                Storage::disk($documento->disk)->delete($documento->path);
             }
         }
 
@@ -111,12 +113,37 @@ class ServicioController extends Controller
         return redirect()->route('servicios.index')->with('status', 'Expediente eliminado.');
     }
 
-    public function descargarDocumento(Servicio $servicio, DocumentoServicio $documento): StreamedResponse
+    public function descargarDocumento(Request $request, Servicio $servicio, DocumentoServicio $documento): StreamedResponse
     {
         abort_unless($documento->servicio_id === $servicio->id, 404);
 
+        if ($request->boolean('inline')) {
+            return Storage::disk($documento->disk)
+                ->response($documento->path, $documento->nombre_original, [
+                    'Content-Disposition' => 'inline; filename="'.addslashes($documento->nombre_original).'"',
+                ]);
+        }
+
         return Storage::disk($documento->disk)
             ->download($documento->path, $documento->nombre_original);
+    }
+
+    public function eliminarDocumento(Request $request, Servicio $servicio, DocumentoServicio $documento): RedirectResponse
+    {
+        abort_unless($documento->servicio_id === $servicio->id, 404);
+
+        if ($documento->path && Storage::disk($documento->disk)->exists($documento->path)) {
+            Storage::disk($documento->disk)->delete($documento->path);
+        }
+
+        $nombre = $documento->nombre_original;
+        $tipoLabel = $documento->tipoLabel();
+        $documento->delete();
+
+        $servicio->load('documentos');
+        $servicio->sincronizarHitosOperativos($request->user()->id);
+
+        return back()->with('status', "Documento '{$tipoLabel}' ({$nombre}) eliminado correctamente.");
     }
 
     private function persistServicio(Request $request, Servicio $servicio): void
@@ -208,9 +235,8 @@ class ServicioController extends Controller
             $oldDisk = $documento->exists ? $documento->disk : null;
             $oldPath = $documento->exists ? $documento->path : null;
 
-            if ($oldPath && ! Storage::disk($oldDisk)->delete($oldPath)) {
-                Storage::disk($disk)->delete($path);
-                abort(503, 'No se pudo reemplazar el documento privado anterior.');
+            if ($oldPath && Storage::disk($oldDisk)->exists($oldPath)) {
+                Storage::disk($oldDisk)->delete($oldPath);
             }
 
             $documento->fill([

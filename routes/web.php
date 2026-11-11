@@ -42,6 +42,8 @@ Route::middleware('auth')->group(function () {
             ->name('servicios.urna.asignar');
         Route::get('/servicios/{servicio}/documentos/{documento}', [ServicioController::class, 'descargarDocumento'])
             ->name('servicios.documentos.descargar');
+        Route::delete('/servicios/{servicio}/documentos/{documento}', [ServicioController::class, 'eliminarDocumento'])
+            ->name('servicios.documentos.destroy');
 
         Route::get('/flota/calendario', [FlotaController::class, 'calendario'])
             ->name('flota.calendario');
