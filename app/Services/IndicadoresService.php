@@ -29,7 +29,12 @@ class IndicadoresService
      */
     public function getValorUF(): float
     {
-        return (float) Cache::remember(self::CACHE_KEY_HOY, 86400, function () {
+        $configValue = config('funeraria.uf_value_clp');
+        if (app()->environment('testing') && filled($configValue) && is_numeric($configValue)) {
+            return (float) $configValue;
+        }
+
+        return (float) Cache::remember(self::CACHE_KEY_HOY, 86400, function () use ($configValue) {
             try {
                 $response = Http::timeout(4)
                     ->acceptJson()
@@ -55,7 +60,6 @@ class IndicadoresService
             }
 
             // Fallback 2: Variable de entorno configurada en config/funeraria.php
-            $configValue = config('funeraria.uf_value_clp');
             if (filled($configValue) && is_numeric($configValue)) {
                 return (float) $configValue;
             }
