@@ -58,9 +58,7 @@ class ServicioController extends Controller
 
         $pasos = $servicio->sincronizarHitosOperativos();
         $porcentajeAvance = $servicio->calcularPorcentajeAvance();
-        $urnasDisponibles = Urna::where(function ($query) {
-            $query->where('stock_salon', '>', 0)->orWhere('stock_taller', '>', 0);
-        })->orderBy('modelo')->get();
+        $urnasDisponibles = Urna::orderBy('modelo')->get();
 
         return view('servicios.show', compact('servicio', 'pasos', 'porcentajeAvance', 'urnasDisponibles'));
     }
