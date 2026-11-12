@@ -118,4 +118,109 @@ class UsuariosRbacTest extends TestCase
             ])
             ->assertForbidden();
     }
+
+    public function test_admin_can_update_estado_operativo(): void
+    {
+        $admin = User::factory()->create(['role' => 'administrador']);
+        $empleado = User::factory()->create([
+            'role' => 'chofer',
+            'estado_operativo' => 'Disponible',
+        ]);
+
+        $response = $this->actingAs($admin)->patch(route('usuarios.estado', $empleado->id), [
+            'estado_operativo' => 'Licencia Médica',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertEquals('Licencia Médica', $empleado->fresh()->estado_operativo);
+    }
+
+    public function test_cannot_change_estado_from_en_ruta_unless_disponible(): void
+    {
+        $admin = User::factory()->create(['role' => 'administrador']);
+        $chofer = User::factory()->create([
+            'role' => 'chofer',
+            'estado_operativo' => 'En Ruta',
+        ]);
+
+        // Intento inválido: pasar de 'En Ruta' a 'Vacaciones'
+        $response = $this->actingAs($admin)->patch(route('usuarios.estado', $chofer->id), [
+            'estado_operativo' => 'Vacaciones',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'El chofer debe finalizar su ruta antes de cambiar su estado.');
+        $this->assertEquals('En Ruta', $chofer->fresh()->estado_operativo);
+
+        // Intento válido: pasar de 'En Ruta' a 'Disponible'
+        $responseOk = $this->actingAs($admin)->patch(route('usuarios.estado', $chofer->id), [
+            'estado_operativo' => 'Disponible',
+        ]);
+
+        $responseOk->assertRedirect();
+        $this->assertEquals('Disponible', $chofer->fresh()->estado_operativo);
+    }
+
+    public function test_admin_cannot_deactivate_self(): void
+    {
+        $admin = User::factory()->create(['role' => 'administrador']);
+
+        $response = $this->actingAs($admin)->delete(route('usuarios.destroy', $admin->id));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'Infracción de seguridad: No puede desactivar su propia cuenta.');
+        $this->assertNotSoftDeleted('users', ['id' => $admin->id]);
+    }
+
+    public function test_admin_can_soft_delete_user_and_revokes_visibility(): void
+    {
+        $admin = User::factory()->create(['role' => 'administrador']);
+        $empleado = User::factory()->create([
+            'name' => 'Empleado A Desactivar',
+            'email' => 'empleado.baja@cristorey.cl',
+            'role' => 'chofer',
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('usuarios.destroy', $empleado->id));
+
+        $response->assertRedirect();
+        $this->assertSoftDeleted('users', ['id' => $empleado->id]);
+
+        // Ya no debe aparecer en la lista de usuarios activos
+        $indexResponse = $this->actingAs($admin)->get(route('usuarios.index'));
+        $indexResponse->assertOk();
+        $indexResponse->assertDontSee('empleado.baja@cristorey.cl');
+    }
+
+    public function test_admin_can_update_user_master_data(): void
+    {
+        $admin = User::factory()->create(['role' => 'administrador']);
+        $empleado = User::factory()->create([
+            'name' => 'Nombre Viejo',
+            'email' => 'viejo@cristorey.cl',
+            'role' => 'asistente',
+            'rut' => '11.222.333-4',
+            'sede_asignada' => 'Calle Blanco',
+        ]);
+
+        $response = $this->actingAs($admin)->put(route('usuarios.update', $empleado->id), [
+            'name' => 'Nombre Nuevo',
+            'email' => 'nuevo@cristorey.cl',
+            'role' => 'asistente',
+            'rut' => '11.222.333-4',
+            'telefono' => '+56 9 1234 5678',
+            'sede_asignada' => 'Taller',
+            'estado_operativo' => 'Disponible',
+            'estado_cuenta' => 'activa',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('users', [
+            'id' => $empleado->id,
+            'name' => 'Nombre Nuevo',
+            'email' => 'nuevo@cristorey.cl',
+            'sede_asignada' => 'Taller',
+            'telefono' => '+56 9 1234 5678',
+        ]);
+    }
 }
