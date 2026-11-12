@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Validation\Rule;
@@ -11,7 +12,7 @@ use Illuminate\Validation\Rule;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     public const ROLES = [
         'administrador' => [
@@ -89,6 +90,11 @@ class User extends Authenticatable
         ],
         'Licencia Médica' => [
             'label' => 'Licencia Médica',
+            'badge' => 'bg-purple-100 text-purple-800 border-purple-300',
+            'dot' => 'text-purple-500',
+        ],
+        'Suspendido' => [
+            'label' => 'Suspendido',
             'badge' => 'bg-rose-100 text-rose-800 border-rose-300',
             'dot' => 'text-rose-500',
         ],
@@ -145,6 +151,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -202,7 +209,10 @@ class User extends Authenticatable
 
     public function hasRole(string ...$roles): bool
     {
-        return in_array($this->role, $roles, true);
+        $currentRole = strtolower($this->role ?? '');
+        $roles = array_map('strtolower', $roles);
+
+        return in_array($currentRole, $roles, true);
     }
 
     public function homeRoute(): string
