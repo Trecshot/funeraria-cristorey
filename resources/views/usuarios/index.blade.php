@@ -25,7 +25,8 @@
                             <th class="p-3.5">Rol en el Sistema (RBAC)</th>
                             <th class="p-3.5">Contacto & Sede</th>
                             <th class="p-3.5">Estado Laboral & Cuenta</th>
-                            <th class="p-3.5 rounded-r-xl">Seguridad y Permisos</th>
+                            <th class="p-3.5">Seguridad y Permisos</th>
+                            <th class="p-3.5 rounded-r-xl text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -63,7 +64,7 @@
                                     @endif
                                 </td>
 
-                                <!-- 3. Contacto & Sede (Reemplaza a Módulos Autorizados) -->
+                                <!-- 3. Contacto & Sede -->
                                 <td class="p-3.5">
                                     @if($usuario->telefono)
                                         <a href="tel:{{ preg_replace('/[^0-9+]/', '', $usuario->telefono) }}" class="inline-flex items-center text-xs font-semibold text-slate-800 hover:text-indigo-600 transition" title="Llamar directamente">
@@ -106,6 +107,78 @@
                                     <span class="text-[10px] text-slate-400 block mt-0.5">
                                         {{ Str::limit($usuario->authorizedModulesDescription(), 30) }}
                                     </span>
+                                </td>
+
+                                <!-- 6. Acciones (Gestión) -->
+                                <td class="p-3.5">
+                                    <div class="flex flex-col gap-2 min-w-[170px]">
+                                        <!-- Fila de Botones: Editar y Desactivar -->
+                                        <div class="flex items-center gap-1.5">
+                                            <!-- [ ✏️ Editar ] -->
+                                            <button type="button"
+                                                onclick="abrirModalEditar({{ json_encode([
+                                                    'id' => $usuario->id,
+                                                    'name' => $usuario->name,
+                                                    'email' => $usuario->email,
+                                                    'rut' => $usuario->rut,
+                                                    'telefono' => $usuario->telefono,
+                                                    'role' => $usuario->role,
+                                                    'sede_asignada' => $usuario->sede_asignada,
+                                                    'tipo_licencia' => $usuario->tipo_licencia,
+                                                    'estado_operativo' => $usuario->estado_operativo,
+                                                    'estado_cuenta' => $usuario->estado_cuenta,
+                                                ]) }})"
+                                                title="Editar datos de {{ $usuario->name }}"
+                                                class="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                                                <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                                                <span>Editar</span>
+                                            </button>
+
+                                            <!-- [ 🗑️ Desactivar ] -->
+                                            @if(auth()->id() !== $usuario->id)
+                                                <form method="POST" action="{{ route('usuarios.destroy', $usuario->id) }}" onsubmit="return confirm('¿Confirmas que deseas desactivar la cuenta de {{ $usuario->name }}? Se revocará su acceso al sistema.')" class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        title="Desactivar usuario (Soft Delete)"
+                                                        class="px-2.5 py-1 text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                                                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                                        <span>Desactivar</span>
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <span title="Infracción de seguridad: No puede desactivar su propia cuenta" class="px-2.5 py-1 text-[11px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-lg cursor-not-allowed flex items-center gap-1.5 opacity-60">
+                                                    <i class="fa-solid fa-shield-halved text-[10px]"></i>
+                                                    <span>Tú</span>
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <!-- Menú desplegable / Selector: Cambiar Estado -->
+                                        <form method="POST" action="{{ route('usuarios.estado', $usuario->id) }}" class="space-y-1">
+                                            @csrf
+                                            @method('PATCH')
+                                            <div class="flex items-center text-[10px] text-slate-500 font-semibold">
+                                                <span><i class="fa-solid fa-rotate text-indigo-500 mr-1 text-[9px]"></i>Cambiar Estado:</span>
+                                            </div>
+                                            <div class="relative">
+                                                <select name="estado_operativo"
+                                                    onchange="this.form.submit()"
+                                                    class="w-full text-[11px] font-medium py-1 px-2 pr-6 border border-slate-200 rounded-lg bg-white text-slate-700 hover:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition cursor-pointer appearance-none shadow-sm">
+                                                    <option value="Disponible" @selected($usuario->estado_operativo === 'Disponible')>🟢 Disponible</option>
+                                                    @if($usuario->hasRole('chofer') || $usuario->estado_operativo === 'En Ruta')
+                                                        <option value="En Ruta" @selected($usuario->estado_operativo === 'En Ruta')>🟡 En Ruta</option>
+                                                    @endif
+                                                    <option value="Licencia Médica" @selected($usuario->estado_operativo === 'Licencia Médica')>🟣 Licencia Médica</option>
+                                                    <option value="Vacaciones" @selected($usuario->estado_operativo === 'Vacaciones')>⚪ Vacaciones</option>
+                                                    <option value="Suspendido" @selected($usuario->estado_operativo === 'Suspendido')>🔴 Suspendido</option>
+                                                </select>
+                                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-slate-400 text-[9px]">
+                                                    <i class="fa-solid fa-chevron-down"></i>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -235,6 +308,145 @@
             </form>
         </section>
     </div>
+
+    <!-- MODAL: EDITAR DATOS MAESTROS DEL USUARIO -->
+    <div id="modal-editar-usuario" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+            <!-- Header Modal -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-user-pen"></i>
+                    </span>
+                    <div>
+                        <h4 class="font-serif-title text-base font-bold text-slate-900">Editar Datos de Integrante (RBAC)</h4>
+                        <p class="text-xs text-slate-500">Actualiza datos personales, rol laboral, permisos o sede asignada.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModalEditar()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <!-- Formulario de Edición -->
+            <form id="form-editar-usuario" method="POST" action="" class="p-6 space-y-6">
+                @csrf
+                @method('PUT')
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Columna 1: Credenciales y Rol -->
+                    <div class="bg-slate-50/60 p-4 rounded-2xl border border-slate-200/80 space-y-3.5">
+                        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+                            <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-800 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-lock"></i>
+                            </span>
+                            <h5 class="font-bold text-xs text-slate-800 uppercase tracking-wide">Credenciales y Rol</h5>
+                        </div>
+
+                        <label class="block">
+                            <span class="label">Rol Operativo (RBAC) *</span>
+                            <select id="edit-role" name="role" class="field bg-white" required onchange="actualizarCamposPorRolModal(this.value)">
+                                @foreach(\App\Models\User::ROLES as $roleKey => $roleMeta)
+                                    <option value="{{ $roleKey }}">{{ $roleMeta['form_label'] }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+
+                        <label class="block">
+                            <span class="label">Nombre Completo *</span>
+                            <input id="edit-name" class="field bg-white" type="text" name="name" required>
+                        </label>
+
+                        <label class="block">
+                            <span class="label">Correo Electrónico (Login) *</span>
+                            <input id="edit-email" class="field bg-white" type="email" name="email" required>
+                        </label>
+
+                        <label class="block">
+                            <span class="label">Nueva Contraseña (Opcional)</span>
+                            <input id="edit-password" class="field bg-white" type="password" name="password" minlength="12" placeholder="Dejar en blanco para conservar">
+                            <span class="text-[10px] text-slate-400 mt-0.5 block">Solo llenar si se desea cambiar la clave (mín. 12 car.).</span>
+                        </label>
+                    </div>
+
+                    <!-- Columna 2: Datos Operativos y Turnos -->
+                    <div class="bg-slate-50/60 p-4 rounded-2xl border border-slate-200/80 space-y-3.5">
+                        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+                            <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-id-card"></i>
+                            </span>
+                            <h5 class="font-bold text-xs text-slate-800 uppercase tracking-wide">Datos Operativos</h5>
+                        </div>
+
+                        <label class="block">
+                            <span class="label">RUT / Documento</span>
+                            <input id="edit-rut" class="field bg-white" type="text" name="rut" placeholder="Ej: 15.345.678-9">
+                        </label>
+
+                        <label class="block">
+                            <span class="label">Teléfono Celular</span>
+                            <input id="edit-telefono" class="field bg-white" type="text" name="telefono" placeholder="+56 9 8412 5590">
+                        </label>
+
+                        <label class="block">
+                            <span class="label">Sede Principal Asignada *</span>
+                            <select id="edit-sede" name="sede_asignada" class="field bg-white" required>
+                                @foreach(\App\Models\User::SEDES as $sedeKey => $sedeLabel)
+                                    <option value="{{ $sedeKey }}">{{ $sedeLabel }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+
+                        <!-- Campo condicional para chofer -->
+                        <div id="wrapper-modal-licencia" class="space-y-1">
+                            <label class="block">
+                                <span class="label flex items-center justify-between">
+                                    <span>Tipo de Licencia</span>
+                                    <span class="text-[10px] text-blue-600 font-semibold bg-blue-50 px-1.5 py-0.5 rounded">Exclusivo Chofer</span>
+                                </span>
+                                <select id="edit-tipo-licencia" name="tipo_licencia" class="field bg-white">
+                                    <option value="">Selecciona clase...</option>
+                                    @foreach(\App\Models\User::TIPOS_LICENCIA as $licKey => $licLabel)
+                                        <option value="{{ $licKey }}">{{ $licLabel }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="block">
+                                <span class="label">Estado Laboral</span>
+                                <select id="edit-estado-operativo" name="estado_operativo" class="field bg-white">
+                                    @foreach(\App\Models\User::ESTADOS_OPERATIVOS as $opKey => $opMeta)
+                                        <option value="{{ $opKey }}">{{ $opMeta['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+
+                            <label class="block">
+                                <span class="label">Estado Cuenta</span>
+                                <select id="edit-estado-cuenta" name="estado_cuenta" class="field bg-white">
+                                    @foreach(\App\Models\User::ESTADOS_CUENTA as $ctaKey => $ctaMeta)
+                                        <option value="{{ $ctaKey }}">{{ $ctaMeta['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Modal -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <button type="button" onclick="cerrarModalEditar()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="button-primary">
+                        <i class="fa-solid fa-floppy-disk mr-1.5"></i>Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -253,6 +465,52 @@
             }
         }
     }
+
+    function abrirModalEditar(data) {
+        const modal = document.getElementById('modal-editar-usuario');
+        const form = document.getElementById('form-editar-usuario');
+        if (!modal || !form) return;
+
+        form.action = `/usuarios/${data.id}`;
+        document.getElementById('edit-name').value = data.name || '';
+        document.getElementById('edit-email').value = data.email || '';
+        document.getElementById('edit-rut').value = data.rut || '';
+        document.getElementById('edit-telefono').value = data.telefono || '';
+        document.getElementById('edit-role').value = data.role || 'chofer';
+        document.getElementById('edit-sede').value = data.sede_asignada || 'Calle Blanco';
+        document.getElementById('edit-tipo-licencia').value = data.tipo_licencia || '';
+        document.getElementById('edit-estado-operativo').value = data.estado_operativo || 'Disponible';
+        document.getElementById('edit-estado-cuenta').value = data.estado_cuenta || 'activa';
+        document.getElementById('edit-password').value = '';
+
+        actualizarCamposPorRolModal(data.role);
+
+        modal.classList.remove('hidden');
+    }
+
+    function cerrarModalEditar() {
+        const modal = document.getElementById('modal-editar-usuario');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    function actualizarCamposPorRolModal(rol) {
+        const wrapper = document.getElementById('wrapper-modal-licencia');
+        if (wrapper) {
+            if (rol === 'chofer') {
+                wrapper.classList.remove('hidden');
+            } else {
+                wrapper.classList.add('hidden');
+            }
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            cerrarModalEditar();
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         const selectRole = document.getElementById('select-role-usuario');
