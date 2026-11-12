@@ -42,6 +42,8 @@ Route::middleware('auth')->group(function () {
             ->name('servicios.urna.asignar');
         Route::get('/servicios/{servicio}/documentos/{documento}', [ServicioController::class, 'descargarDocumento'])
             ->name('servicios.documentos.descargar');
+        Route::get('/servicios/{servicio}/documentos-legales/{tipo}', [ServicioController::class, 'descargarDocumentoLegal'])
+            ->name('servicios.documentos_legales.descargar');
         Route::delete('/servicios/{servicio}/documentos/{documento}', [ServicioController::class, 'eliminarDocumento'])
             ->name('servicios.documentos.destroy');
         Route::post('/servicios/{servicio}/cuotas/{cuota}/pagar', [ServicioController::class, 'pagarCuota'])

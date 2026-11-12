@@ -206,7 +206,12 @@ class FlotaController extends Controller
 
     public function chofer(Request $request): View
     {
-        $traslados = Traslado::with(['servicio:id,difunto_nombre,cliente_nombre', 'vehiculo'])
+        // Minimización de datos según Ley N° 21.663 (Ciberseguridad y RBAC):
+        // Choferes solo acceden al nombre del difunto, horario y destino, omitiendo montos, convenios y causas legales
+        $traslados = Traslado::with([
+                'servicio:id,difunto_nombre',
+                'vehiculo:id,patente,modelo_uso,estado',
+            ])
             ->whereIn('estado', ['programado', 'en_camino'])
             ->when(
                 $request->user()->hasRole('chofer'),
