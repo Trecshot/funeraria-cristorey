@@ -109,6 +109,16 @@ class Servicio extends Model
         return $this->hasMany(DocumentoServicio::class);
     }
 
+    public function documentoLegal(): HasOne
+    {
+        return $this->hasOne(DocumentoLegal::class, 'expediente_id');
+    }
+
+    public function auditorias(): HasMany
+    {
+        return $this->hasMany(HistorialAuditoria::class, 'expediente_id')->latest();
+    }
+
     public function traslados(): HasMany
     {
         return $this->hasMany(Traslado::class);
