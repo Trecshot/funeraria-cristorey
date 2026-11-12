@@ -57,6 +57,230 @@
             </div>
         </section>
 
+        <!-- SECCIÓN: MATRIZ DE CONTEXTOS DE DECESO Y EXIGENCIAS SANITARIAS (LEY 21.719) -->
+        @php
+            $docLegal = $documentoLegal ?? $servicio->documentoLegal ?? new \App\Models\DocumentoLegal(['contexto_deceso' => 'NATURAL']);
+            $contextoActual = old('contexto_deceso', $docLegal->contexto_deceso ?? 'NATURAL');
+            $testigosActuales = old('testigos', $docLegal->testigos_rurales ?? [
+                ['nombre' => '', 'rut' => ''],
+                ['nombre' => '', 'rut' => '']
+            ]);
+            if (count($testigosActuales) < 2) {
+                while(count($testigosActuales) < 2) {
+                    $testigosActuales[] = ['nombre' => '', 'rut' => ''];
+                }
+            }
+            $trasladoInterurbano = (bool) old('traslado_interurbano', $docLegal->traslado_interurbano ?? false);
+        @endphp
+
+        <section class="panel space-y-4 border-2 border-indigo-100 bg-white shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                    <h2 class="font-serif-title text-lg font-bold text-slate-900 flex items-center">
+                        <i class="fa-solid fa-scale-balanced text-indigo-700 mr-2"></i>Matriz de Contextos de Deceso y Requisitos Sanitarios
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Conformidad legal según Código Sanitario (Art. 75 DTO 357) y Protección de Datos Personales con Cifrado en Reposo AES-256 (Ley N° 21.719).
+                    </p>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                    <i class="fa-solid fa-lock text-[10px]"></i> Cifrado AES-256 Activo
+                </span>
+            </div>
+
+            <!-- SELECTOR DE CONTEXTO OBLIGATORIO -->
+            <div class="grid gap-4 md:grid-cols-2">
+                <label class="block">
+                    <span class="label font-bold text-slate-900">Contexto del Deceso *</span>
+                    <select id="select-contexto-deceso" name="contexto_deceso" class="field bg-white font-semibold text-indigo-950 border-indigo-300 focus:border-indigo-600 ring-indigo-50" required onchange="actualizarContextoDeceso(this.value)">
+                        <option value="NATURAL" @selected($contextoActual === 'NATURAL')>🟢 Muerte Natural (Requiere Certificado Médico)</option>
+                        <option value="SML_VIOLENTO" @selected($contextoActual === 'SML_VIOLENTO')>🔴 Muerte Violenta / SML (Requiere Parte Fiscalía)</option>
+                        <option value="RURAL_TESTIGOS" @selected($contextoActual === 'RURAL_TESTIGOS')>🌾 Muerte en Zona Rural (Requiere 2 Testigos Presenciales)</option>
+                    </select>
+                    <span class="text-[10px] text-slate-400 mt-1 block">Determina los plazos de inhumación y la documentación acreditante requerida.</span>
+                </label>
+
+                <!-- CHECKBOX: TRASLADO INTERURBANO -->
+                <div class="flex flex-col justify-center bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/80">
+                    <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input type="checkbox" id="check-traslado-interurbano" name="traslado_interurbano" value="1" @checked($trasladoInterurbano) class="rounded border-slate-300 text-indigo-700 focus:ring-indigo-500 w-4 h-4" onchange="toggleTrasladoInterurbano(this.checked)">
+                        <span class="text-xs font-bold text-slate-800">
+                            <i class="fa-solid fa-road mr-1 text-indigo-600"></i>¿Requiere Traslado Interurbano (Entre Comunas)?
+                        </span>
+                    </label>
+                    <span class="text-[10px] text-slate-500 mt-1 pl-6">
+                        Exige obligatoriamente Resolución Sanitaria de la Seremi de Salud (Art. 75 DTO 357) para circulación entre comunas.
+                    </span>
+                </div>
+            </div>
+
+            <!-- 1. ALERTA DE 48 HORAS (SÓLO VISIBLE EN MUERTE NATURAL) -->
+            <div id="alerta-48-horas" class="{{ $contextoActual === 'NATURAL' ? '' : 'hidden' }} bg-amber-50 border border-amber-300/80 rounded-xl p-3.5 flex items-start gap-3 text-xs text-amber-950 transition-all">
+                <i class="fa-solid fa-hourglass-half text-amber-600 text-base mt-0.5 flex-shrink-0"></i>
+                <div class="space-y-0.5">
+                    <p class="font-bold">Plazo Legal Estricto de 48 Horas (Código Sanitario)</p>
+                    <p class="text-[11px] text-amber-900 leading-relaxed">
+                        Por disposición sanitaria para defunciones de causa natural, la sepultación o cremación debe realizarse entre las <strong>24 y 48 horas</strong> posteriores al deceso, salvo autorización excepcional de la autoridad sanitaria.
+                    </p>
+                </div>
+            </div>
+
+            <!-- FOLIOS CIFRADOS (LEY 21.719): CERTIFICADO MÉDICO Y PASE DE SEPULTACIÓN -->
+            <div class="grid gap-4 md:grid-cols-2">
+                <!-- Folio Médico (Obligatorio en Natural) -->
+                <div id="wrapper-folio-medico" class="{{ $contextoActual === 'NATURAL' ? '' : 'hidden' }}">
+                    <label class="block">
+                        <span class="label font-semibold text-slate-800">
+                            <i class="fa-solid fa-file-medical text-emerald-600 mr-1"></i>Folio Certificado Médico de Defunción <span class="text-rose-600">*</span>
+                        </span>
+                        <input id="input-folio-medico" class="field bg-white" type="text" name="folio_certificado_medico" value="{{ old('folio_certificado_medico', $docLegal->folio_certificado_medico) }}" placeholder="Ej: CMD-2026-98124">
+                        <span class="text-[10px] text-slate-400 mt-1 block">
+                            <i class="fa-solid fa-lock text-[9px] mr-1"></i>Dato sensible cifrado automáticamente en base de datos (AES-256).
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Folio Pase de Sepultación (Registro Civil) -->
+                <div>
+                    <label class="block">
+                        <span class="label font-semibold text-slate-800">
+                            <i class="fa-solid fa-stamp text-indigo-600 mr-1"></i>Folio Pase de Sepultación (Registro Civil)
+                        </span>
+                        <input class="field bg-white" type="text" name="folio_pase_sepultacion" value="{{ old('folio_pase_sepultacion', $docLegal->folio_pase_sepultacion) }}" placeholder="Ej: PS-77821-TEMUCO">
+                        <span class="text-[10px] text-slate-400 mt-1 block">
+                            <i class="fa-solid fa-lock text-[9px] mr-1"></i>Emitido por el Oficial del Registro Civil tras la inscripción legal.
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 2. CONTENEDOR SML: ORDEN DE AUTOPSIA / PARTE DE FISCALÍA (OBLIGATORIO EN SML_VIOLENTO) -->
+            <div id="wrapper-sml-fiscalia" class="{{ $contextoActual === 'SML_VIOLENTO' ? '' : 'hidden' }} bg-rose-50/60 border border-rose-200 rounded-xl p-4 space-y-3 transition-all">
+                <div class="flex items-center gap-2 border-b border-rose-200/80 pb-2">
+                    <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-800 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </span>
+                    <h3 class="font-bold text-xs text-rose-950 uppercase tracking-wide">
+                        Requisito Legal Fiscalía / SML (Muerte Violenta o Indagatoria)
+                    </h3>
+                </div>
+                <p class="text-xs text-rose-900">
+                    Al existir intervención judicial o causa indeterminada, <strong>se suspende la regla de las 48 horas</strong> hasta que el Servicio Médico Legal y la Fiscalía emitan la orden de entrega y autorización de sepultación.
+                </p>
+
+                <div class="space-y-2">
+                    <label class="block">
+                        <span class="label font-bold text-slate-900">
+                            Subir Parte de Fiscalía / Orden de Autopsia SML <span class="text-rose-600">*</span>
+                        </span>
+                        <input type="file" name="orden_autopsia_sml" accept=".pdf,.jpg,.jpeg,.png" class="field bg-white">
+                        <span class="text-[10px] text-slate-500 mt-1 block">Formatos permitidos: PDF, JPG, PNG (Máx. 15 MB).</span>
+                    </label>
+
+                    @if($docLegal->ruta_orden_autopsia_sml && $servicio->exists)
+                        <div class="flex items-center justify-between bg-white border border-rose-200 rounded-lg p-2.5 text-xs">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="fa-solid fa-file-pdf text-rose-600 text-base"></i>
+                                <span class="font-semibold text-slate-800 truncate">Documento de Fiscalía cargado</span>
+                            </div>
+                            <a href="{{ route('servicios.documentos_legales.descargar', [$servicio, 'sml', 'inline' => 1]) }}" target="_blank" class="px-2 py-1 bg-rose-100 text-rose-900 rounded font-semibold text-[11px] hover:bg-rose-200 transition">
+                                <i class="fa-regular fa-eye mr-1"></i>Ver Archivo
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- 3. CONTENEDOR RURAL: ARRAY DINÁMICO DE 2 TESTIGOS PRESENCIALES -->
+            <div id="wrapper-rural-testigos" class="{{ $contextoActual === 'RURAL_TESTIGOS' ? '' : 'hidden' }} bg-emerald-50/60 border border-emerald-200 rounded-xl p-4 space-y-3 transition-all">
+                <div class="flex items-center justify-between border-b border-emerald-200/80 pb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-users"></i>
+                        </span>
+                        <h3 class="font-bold text-xs text-emerald-950 uppercase tracking-wide">
+                            Testigos de Inscripción en Zona Rural (Art. 45 Ley Registro Civil)
+                        </h3>
+                    </div>
+                    <span class="text-[10px] bg-emerald-200/80 text-emerald-950 font-bold px-2 py-0.5 rounded-full">
+                        2 Testigos Requeridos
+                    </span>
+                </div>
+                <p class="text-xs text-emerald-900">
+                    En sectores rurales donde no intervino médico certificador, la inscripción de defunción se realiza mediante la comparecencia de dos testigos mayores de edad que conozcan el fallecimiento.
+                </p>
+
+                <div class="grid gap-4 md:grid-cols-2 pt-1">
+                    <!-- TESTIGO 1 -->
+                    <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-2">
+                        <p class="font-bold text-xs text-emerald-900 flex items-center">
+                            <i class="fa-solid fa-user-check text-emerald-600 mr-1.5"></i>Testigo Presencial #1
+                        </p>
+                        <label class="block">
+                            <span class="label text-[11px]">Nombre Completo *</span>
+                            <input class="field bg-slate-50/50" type="text" name="testigos[0][nombre]" value="{{ $testigosActuales[0]['nombre'] ?? '' }}" placeholder="Nombre y Apellidos">
+                        </label>
+                        <label class="block">
+                            <span class="label text-[11px]">RUT / Cédula *</span>
+                            <input class="field bg-slate-50/50" type="text" name="testigos[0][rut]" value="{{ $testigosActuales[0]['rut'] ?? '' }}" placeholder="12.345.678-9">
+                        </label>
+                    </div>
+
+                    <!-- TESTIGO 2 -->
+                    <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-2">
+                        <p class="font-bold text-xs text-emerald-900 flex items-center">
+                            <i class="fa-solid fa-user-check text-emerald-600 mr-1.5"></i>Testigo Presencial #2
+                        </p>
+                        <label class="block">
+                            <span class="label text-[11px]">Nombre Completo *</span>
+                            <input class="field bg-slate-50/50" type="text" name="testigos[1][nombre]" value="{{ $testigosActuales[1]['nombre'] ?? '' }}" placeholder="Nombre y Apellidos">
+                        </label>
+                        <label class="block">
+                            <span class="label text-[11px]">RUT / Cédula *</span>
+                            <input class="field bg-slate-50/50" type="text" name="testigos[1][rut]" value="{{ $testigosActuales[1]['rut'] ?? '' }}" placeholder="15.876.543-2">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. CONTENEDOR EXIGENCIA SEREMI POR TRASLADO INTERURBANO -->
+            <div id="wrapper-resolucion-seremi" class="{{ $trasladoInterurbano ? '' : 'hidden' }} bg-indigo-50/60 border border-indigo-200 rounded-xl p-4 space-y-3 transition-all">
+                <div class="flex items-center gap-2 border-b border-indigo-200/80 pb-2">
+                    <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-800 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-truck-plane"></i>
+                    </span>
+                    <h3 class="font-bold text-xs text-indigo-950 uppercase tracking-wide">
+                        Resolución Sanitaria de Traslado Interurbano (Seremi de Salud)
+                    </h3>
+                </div>
+                <p class="text-xs text-indigo-900">
+                    Al estar marcado el traslado interurbano, el Decreto 357 exige portar en el móvil la resolución sanitaria visada por la Seremi de Salud correspondiente al origen y destino.
+                </p>
+
+                <div class="space-y-2">
+                    <label class="block">
+                        <span class="label font-bold text-slate-900">
+                            Subir Resolución Sanitaria de Traslado Seremi <span class="text-rose-600">*</span>
+                        </span>
+                        <input type="file" name="resolucion_seremi" accept=".pdf,.jpg,.jpeg,.png" class="field bg-white">
+                        <span class="text-[10px] text-slate-500 mt-1 block">Formatos permitidos: PDF, JPG, PNG (Máx. 15 MB).</span>
+                    </label>
+
+                    @if($docLegal->ruta_resolucion_seremi && $servicio->exists)
+                        <div class="flex items-center justify-between bg-white border border-indigo-200 rounded-lg p-2.5 text-xs">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="fa-solid fa-file-shield text-indigo-600 text-base"></i>
+                                <span class="font-semibold text-slate-800 truncate">Resolución Seremi registrada</span>
+                            </div>
+                            <a href="{{ route('servicios.documentos_legales.descargar', [$servicio, 'seremi', 'inline' => 1]) }}" target="_blank" class="px-2 py-1 bg-indigo-100 text-indigo-900 rounded font-semibold text-[11px] hover:bg-indigo-200 transition">
+                                <i class="fa-regular fa-eye mr-1"></i>Ver Archivo
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </section>
+
         <section class="panel">
             <h2 class="font-serif-title text-lg font-bold text-slate-900"><i class="fa-solid fa-box-archive text-indigo-700 mr-1.5"></i>Logística Interna: Asignación de Urna</h2>
             <p class="mt-1 text-xs text-slate-500">Selecciona el modelo de urna desde el inventario dual (Salón Calle Blanco o Taller de Ensamblado).</p>
@@ -305,6 +529,45 @@
 
 @push('scripts')
 <script>
+    function actualizarContextoDeceso(contexto) {
+        const alerta48 = document.getElementById('alerta-48-horas');
+        const wrapperFolioMedico = document.getElementById('wrapper-folio-medico');
+        const inputFolioMedico = document.getElementById('input-folio-medico');
+        const wrapperSml = document.getElementById('wrapper-sml-fiscalia');
+        const wrapperRural = document.getElementById('wrapper-rural-testigos');
+
+        if (contexto === 'NATURAL') {
+            if (alerta48) alerta48.classList.remove('hidden');
+            if (wrapperFolioMedico) wrapperFolioMedico.classList.remove('hidden');
+            if (inputFolioMedico) inputFolioMedico.required = true;
+            if (wrapperSml) wrapperSml.classList.add('hidden');
+            if (wrapperRural) wrapperRural.classList.add('hidden');
+        } else if (contexto === 'SML_VIOLENTO') {
+            if (alerta48) alerta48.classList.add('hidden');
+            if (wrapperFolioMedico) wrapperFolioMedico.classList.add('hidden');
+            if (inputFolioMedico) inputFolioMedico.required = false;
+            if (wrapperSml) wrapperSml.classList.remove('hidden');
+            if (wrapperRural) wrapperRural.classList.add('hidden');
+        } else if (contexto === 'RURAL_TESTIGOS') {
+            if (alerta48) alerta48.classList.remove('hidden');
+            if (wrapperFolioMedico) wrapperFolioMedico.classList.add('hidden');
+            if (inputFolioMedico) inputFolioMedico.required = false;
+            if (wrapperSml) wrapperSml.classList.add('hidden');
+            if (wrapperRural) wrapperRural.classList.remove('hidden');
+        }
+    }
+
+    function toggleTrasladoInterurbano(checked) {
+        const wrapperSeremi = document.getElementById('wrapper-resolucion-seremi');
+        if (wrapperSeremi) {
+            if (checked) {
+                wrapperSeremi.classList.remove('hidden');
+            } else {
+                wrapperSeremi.classList.add('hidden');
+            }
+        }
+    }
+
     function toggleReemplazar(tipo) {
         const box = document.getElementById(`box-reemplazo-${tipo}`);
         if (box) {
@@ -336,6 +599,16 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        // Inicializar reactividad de la matriz de contextos de deceso
+        const selectContexto = document.getElementById('select-contexto-deceso');
+        if (selectContexto) {
+            actualizarContextoDeceso(selectContexto.value);
+        }
+        const checkInterurbano = document.getElementById('check-traslado-interurbano');
+        if (checkInterurbano) {
+            toggleTrasladoInterurbano(checkInterurbano.checked);
+        }
+
         // CÁLCULO DE COPAGOS
         const convenio = document.getElementById('convenio');
         const total = document.getElementById('total-servicio');
