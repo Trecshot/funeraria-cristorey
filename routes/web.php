@@ -75,6 +75,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/flota/vehiculos', [FlotaController::class, 'crearVehiculo'])->name('flota.vehiculos.store');
     });
 
+    Route::middleware('role:administrador')->group(function () {
+        Route::patch('/usuarios/{id}/estado', [UsuarioController::class, 'actualizarEstado'])->name('usuarios.estado');
+        Route::put('/usuarios/{id}', [UsuarioController::class, 'update'])->name('usuarios.update');
+        Route::delete('/usuarios/{id}', [UsuarioController::class, 'destroy'])->name('usuarios.destroy');
+    });
+
     Route::middleware('role:administrador,gerencia,finanzas')->group(function () {
         Route::get('/finanzas', [FinanzaController::class, 'index'])->name('finanzas.index');
         Route::patch('/finanzas/liquidaciones/{servicio}', [FinanzaController::class, 'actualizarLiquidacion'])->name('finanzas.liquidaciones.update');
