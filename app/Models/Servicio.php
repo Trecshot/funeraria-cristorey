@@ -66,6 +66,16 @@ class Servicio extends Model
         return $this->difunto_nombre;
     }
 
+    public function getNombreDifuntoAttribute(): ?string
+    {
+        return $this->difunto_nombre;
+    }
+
+    public function getRutDifuntoAttribute(): ?string
+    {
+        return $this->difunto_rut;
+    }
+
     public function getTotalServicioAttribute(): int
     {
         return (int) $this->monto_servicio;
@@ -110,6 +120,11 @@ class Servicio extends Model
     }
 
     public function documentoLegal(): HasOne
+    {
+        return $this->hasOne(DocumentoLegal::class, 'expediente_id');
+    }
+
+    public function documentosLegales(): HasOne
     {
         return $this->hasOne(DocumentoLegal::class, 'expediente_id');
     }

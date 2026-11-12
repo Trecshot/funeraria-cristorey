@@ -6,6 +6,7 @@ use App\Http\Controllers\CatalogoPublicoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinanzaController;
 use App\Http\Controllers\FlotaController;
+use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\ServicioController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Http\Request;
@@ -75,6 +76,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
         Route::post('/usuarios', [UsuarioController::class, 'store'])->name('usuarios.store');
         Route::post('/flota/vehiculos', [FlotaController::class, 'crearVehiculo'])->name('flota.vehiculos.store');
+        Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+        Route::post('/reportes/exportar', [ReporteController::class, 'exportarCsv'])->name('reportes.exportar');
+        Route::post('/reportes/pdf', [ReporteController::class, 'exportarPdf'])->name('reportes.pdf');
     });
 
     Route::middleware('role:administrador')->group(function () {
