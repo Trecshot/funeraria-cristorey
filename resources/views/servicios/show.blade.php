@@ -676,6 +676,55 @@
             </div>
         </section>
 
+        @if($servicio->auditorias->isNotEmpty())
+            <!-- REGISTRO DE AUDITORÍA INMUTABLE (LEY N° 21.663 DE CIBERSEGURIDAD) -->
+            <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3 gap-2">
+                    <h3 class="font-serif-title text-base font-bold text-slate-900 flex items-center">
+                        <i class="fa-solid fa-shield-halved text-emerald-600 mr-2"></i>Pistas de Auditoría Inmutables (Ley N° 21.663)
+                    </h3>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 self-start sm:self-auto">
+                        <i class="fa-solid fa-fingerprint text-[9px]"></i> SHA-256 Verificado & IP Trazada
+                    </span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 text-xs">
+                        <thead class="bg-slate-50 text-left text-[10px] uppercase font-bold text-slate-500">
+                            <tr>
+                                <th class="px-3 py-2.5">Fecha / Hora</th>
+                                <th class="px-3 py-2.5">Acción</th>
+                                <th class="px-3 py-2.5">Entidad</th>
+                                <th class="px-3 py-2.5">Descripción de Auditoría</th>
+                                <th class="px-3 py-2.5">Operador & IP</th>
+                                <th class="px-3 py-2.5">Hash Criptográfico SHA-256</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-[11px]">
+                            @foreach($servicio->auditorias as $auditoria)
+                                <tr class="hover:bg-slate-50/60 transition">
+                                    <td class="px-3 py-2 text-slate-500 font-mono whitespace-nowrap">{{ $auditoria->created_at->format('d/m/Y H:i:s') }}</td>
+                                    <td class="px-3 py-2 whitespace-nowrap">
+                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold {{ $auditoria->action_type === 'CREATE' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800' }}">
+                                            {{ $auditoria->action_type }}
+                                        </span>
+                                    </td>
+                                    <td class="px-3 py-2 font-mono text-[10px] text-slate-500">{{ $auditoria->target_entity }}</td>
+                                    <td class="px-3 py-2 font-medium text-slate-800">{{ $auditoria->descripcion }}</td>
+                                    <td class="px-3 py-2 text-slate-600 whitespace-nowrap">
+                                        <span class="font-semibold">{{ $auditoria->usuario?->name ?? 'Sistema' }}</span>
+                                        <span class="block text-[10px] text-slate-400 font-mono">{{ $auditoria->ip_address }}</span>
+                                    </td>
+                                    <td class="px-3 py-2 font-mono text-[10px] text-slate-400 truncate max-w-[140px]" title="{{ $auditoria->transaction_hash }}">
+                                        {{ Str::limit($auditoria->transaction_hash, 16) }}...
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        @endif
+
         <!-- ELIMINAR EXPEDIENTE -->
         <div id="seccion-cierre" class="flex justify-end">
             <form method="POST" action="{{ route('servicios.destroy', $servicio) }}" onsubmit="return confirm('¿Eliminar este expediente?');">

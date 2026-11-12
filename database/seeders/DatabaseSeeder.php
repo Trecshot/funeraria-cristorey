@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UrnaSeeder::class,
             FlotaSeeder::class,
+            MatrizDecesosSeeder::class,
         ]);
     }
 }

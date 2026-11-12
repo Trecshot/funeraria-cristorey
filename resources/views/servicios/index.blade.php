@@ -33,7 +33,17 @@
                             <tr class="hover:bg-slate-50/80 transition">
                                 <td class="table-cell">
                                     <span class="font-bold text-slate-900">{{ $servicio->difunto }}</span>
-                                    <span class="block text-[10px] text-slate-400">{{ $servicio->folio }}</span>
+                                    <div class="flex flex-wrap items-center gap-1 mt-0.5">
+                                        <span class="text-[10px] text-slate-400 font-mono">{{ $servicio->folio }}</span>
+                                        @if($servicio->documentoLegal)
+                                            <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded {{ $servicio->documentoLegal->esNatural() ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ($servicio->documentoLegal->esSmlViolento() ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-amber-50 text-amber-800 border border-amber-200') }}">
+                                                {{ $servicio->documentoLegal->esNatural() ? '🟢 Natural' : ($servicio->documentoLegal->esSmlViolento() ? '🔴 SML' : '🌾 Rural') }}
+                                                @if($servicio->documentoLegal->traslado_interurbano)
+                                                    <span class="text-indigo-600 font-bold" title="Traslado Interurbano (DTO 357 Seremi)">· <i class="fa-solid fa-road text-[8px]"></i> Seremi</span>
+                                                @endif
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="table-cell">{{ $servicio->cliente_contratante }}</td>
                                 <td class="table-cell">
