@@ -65,6 +65,13 @@
                         </a>
                     @endif
 
+                    @if($user->hasRole('administrador', 'gerencia'))
+                        <a href="{{ route('reportes.index') }}" class="{{ request()->routeIs('reportes.*') ? 'nav-link-active' : 'nav-link' }} justify-between">
+                            <div class="flex items-center space-x-3.5"><i class="fa-solid fa-file-shield w-5 text-center"></i><span>Reportes y Fiscalización</span></div>
+                            <i class="fa-solid fa-chevron-right text-xs opacity-60"></i>
+                        </a>
+                    @endif
+
                     @if($user->hasRole('administrador', 'gerencia', 'chofer'))
                         <a href="{{ route('movil.chofer') }}" class="{{ request()->routeIs('movil.*') ? 'nav-link-active' : 'nav-link' }} justify-between">
                             <div class="flex items-center space-x-3.5"><i class="fa-solid fa-route w-5 text-center"></i><span>Vista chofer</span></div>
