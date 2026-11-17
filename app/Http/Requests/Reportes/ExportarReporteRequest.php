@@ -22,4 +22,16 @@ class ExportarReporteRequest extends FormRequest
             'formato' => ['nullable', 'string', 'in:csv,pdf'],
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'fecha_inicio.required' => 'Debes seleccionar una fecha de inicio para el informe.',
+            'fecha_fin.required' => 'Debes seleccionar una fecha de término para el informe.',
+            'fecha_fin.after_or_equal' => 'La fecha de término debe ser igual o posterior a la fecha de inicio.',
+        ];
+    }
 }

@@ -56,6 +56,20 @@ class StoreUrnaRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'codigo.unique' => 'Ya existe una urna registrada con el código ingresado.',
+            'precio.min' => 'El precio comercial no puede ser negativo.',
+            'stock_salon.min' => 'El stock inicial en Salón no puede ser negativo.',
+            'stock_taller.min' => 'El stock inicial en Taller no puede ser negativo.',
+            'stock_minimo.min' => 'El stock mínimo de alerta no puede ser negativo.',
+        ];
+    }
+
     public function normalizedPayload(): array
     {
         $validated = $this->validated();

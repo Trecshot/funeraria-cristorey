@@ -21,8 +21,10 @@ class GuardarServicioRequest extends FormRequest
 
         $rules = [
             'cliente_nombre' => ['required', 'string', 'max:255'],
+            'cliente_rut' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9kK]$/'],
             'cliente_telefono' => ['nullable', 'string', 'max:30'],
             'difunto_nombre' => ['required', 'string', 'max:255'],
+            'difunto_rut' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9kK]$/'],
             'escolaridad' => ['nullable', 'string', 'max:255'],
             'oficio' => ['nullable', 'string', 'max:255'],
             'causa_sml' => ['nullable', 'string', 'max:5000'],
@@ -77,6 +79,11 @@ class GuardarServicioRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'cliente_rut.regex' => 'El RUT del contratante debe tener un formato chileno válido (ej: 12.345.678-9).',
+            'difunto_rut.regex' => 'El RUT del difunto debe tener un formato chileno válido (ej: 12.345.678-9).',
+            'monto_servicio.min' => 'El monto total del servicio no puede ser negativo.',
+            'monto_servicio.max' => 'El monto total del servicio excede el límite máximo permitido ($9.999.999.999).',
+            'monto_servicio.integer' => 'El monto del servicio debe ser un número entero en pesos (CLP).',
             'contexto_deceso.required' => 'Debes indicar el contexto del deceso para determinar los requisitos legales.',
             'folio_certificado_medico.required' => 'El Folio del Certificado Médico de Defunción es obligatorio en fallecimientos por causa natural.',
             'orden_autopsia_sml.required' => 'Debe adjuntar la Orden de Autopsia / Oficio de Fiscalía para fallecimientos con intervención del SML.',

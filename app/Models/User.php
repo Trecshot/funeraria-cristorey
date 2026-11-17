@@ -172,7 +172,7 @@ class User extends Authenticatable
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'role' => ['required', Rule::in(self::validRoles())],
-            'rut' => ['nullable', 'string', 'max:15', Rule::unique('users', 'rut')],
+            'rut' => ['nullable', 'string', 'max:15', 'regex:/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9kK]$/', Rule::unique('users', 'rut')],
             'telefono' => ['nullable', 'string', 'max:25'],
             'sede_asignada' => ['nullable', Rule::in(array_keys(self::SEDES))],
             'tipo_licencia' => ['nullable', Rule::in(array_keys(self::TIPOS_LICENCIA))],
