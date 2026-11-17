@@ -403,15 +403,15 @@
                             </div>
 
                             @if($doc)
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex-shrink-0">
+                                <span id="badge-doc-{{ $tipoKey }}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex-shrink-0">
                                     <i class="fa-solid fa-check text-[9px]"></i> Documento adjunto
                                 </span>
                             @elseif($esRequerido)
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex-shrink-0" title="Requerido para viabilidad legal">
+                                <span id="badge-doc-{{ $tipoKey }}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex-shrink-0" title="Requerido para viabilidad legal">
                                     <i class="fa-solid fa-triangle-exclamation text-amber-600 text-[9px]"></i> Requerido
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 flex-shrink-0">
+                                <span id="badge-doc-{{ $tipoKey }}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 flex-shrink-0">
                                     <i class="fa-regular fa-circle text-slate-400 text-[8px]"></i> Opcional
                                 </span>
                             @endif
@@ -574,6 +574,17 @@
                 wrapperSeremi.classList.remove('hidden');
             } else {
                 wrapperSeremi.classList.add('hidden');
+            }
+        }
+
+        const badgeSeremi = document.getElementById('badge-doc-resolucion_seremi');
+        if (badgeSeremi && !badgeSeremi.textContent.includes('Documento adjunto')) {
+            if (checked) {
+                badgeSeremi.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex-shrink-0';
+                badgeSeremi.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600 text-[9px]"></i> Requerido';
+            } else {
+                badgeSeremi.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 flex-shrink-0';
+                badgeSeremi.innerHTML = '<i class="fa-regular fa-circle text-slate-400 text-[8px]"></i> Opcional';
             }
         }
     }

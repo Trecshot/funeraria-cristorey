@@ -135,7 +135,11 @@
             </button>
         </div>
 
-        <form id="form-pago-cuota" method="POST" action="" class="space-y-4">
+        @php
+            $primeraCuotaPendiente = ($servicio->liquidacion?->cuotas ?? collect())->first(fn ($c) => $c->estado !== 'pagada');
+            $urlAccionInicial = $primeraCuotaPendiente ? route('servicios.cuotas.pagar', [$servicio, $primeraCuotaPendiente]) : '';
+        @endphp
+        <form id="form-pago-cuota" method="POST" action="{{ $urlAccionInicial }}" class="space-y-4">
             @csrf
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Cuota a pagar</label>
@@ -161,12 +165,12 @@
 
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Comprobante / N° Transacción (Opcional)</label>
-                <input type="text" name="comprobante_referencia" class="field w-full text-xs" placeholder="Ej: Transf. 984723 o Transbank OP #5432">
+                <input type="text" name="comprobante_referencia" maxlength="100" class="field w-full text-xs" placeholder="Ej: Transf. 984723 o Transbank OP #5432">
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Observaciones</label>
-                <textarea name="observaciones" rows="2" class="field w-full text-xs" placeholder="Detalles adicionales del abono..."></textarea>
+                <textarea name="observaciones" rows="2" maxlength="500" class="field w-full text-xs" placeholder="Detalles adicionales del abono..."></textarea>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">

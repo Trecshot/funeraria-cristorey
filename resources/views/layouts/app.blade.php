@@ -103,18 +103,18 @@
         <div class="flex-1 flex flex-col min-w-0">
 
             <!-- HEADER SUPERIOR BLANCO -->
-            <header class="bg-white border-b border-slate-200 px-6 md:px-8 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-                <div class="flex items-center space-x-4">
-                    <button type="button" onclick="document.getElementById('app-sidebar')?.classList.toggle('hidden')" aria-label="Alternar menú lateral" class="text-slate-500 hover:text-indigo-900 text-lg p-1 rounded-lg hover:bg-slate-100 transition">
+            <header class="bg-white border-b border-slate-200 px-4 md:px-8 py-3.5 md:py-4 flex items-center justify-between gap-2 sticky top-0 z-30 shadow-sm">
+                <div class="flex items-center space-x-3 md:space-x-4 min-w-0 flex-1">
+                    <button type="button" onclick="document.getElementById('app-sidebar')?.classList.toggle('hidden')" aria-label="Alternar menú lateral" class="text-slate-500 hover:text-indigo-900 text-lg p-1 rounded-lg hover:bg-slate-100 transition flex-shrink-0">
                         <i class="fa-solid fa-bars"></i>
                     </button>
-                    <div>
-                        <h2 class="font-serif-title text-xl font-bold text-slate-900">Bienvenido, {{ $user->name }}</h2>
-                        <p class="text-xs text-slate-500">@yield('heading', 'Panel de control') - Funeraria Cristo Rey (Sede Calle Blanco)</p>
+                    <div class="min-w-0">
+                        <h2 class="font-serif-title text-base md:text-xl font-bold text-slate-900 truncate">Bienvenido, {{ $user->name }}</h2>
+                        <p class="text-xs text-slate-500 truncate hidden sm:block">@yield('heading', 'Panel de control') - Funeraria Cristo Rey (Sede Calle Blanco)</p>
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-5">
+                <div class="flex items-center space-x-3 md:space-x-5 flex-shrink-0">
                     @if($user->hasRole('administrador', 'gerencia', 'asistente'))
                         <a href="{{ route('servicios.index') }}" class="relative text-slate-600 hover:text-indigo-900 transition" title="Alertas Activas (Semáforo Documental)">
                             <i class="fa-solid fa-bell text-xl"></i>
@@ -123,15 +123,15 @@
                     @endif
 
                     <!-- Perfil Usuario y Cierre Rápido de Sesión -->
-                    <div class="flex items-center space-x-3 pl-3 border-l border-slate-200">
-                        <div class="w-9 h-9 rounded-full bg-indigo-950 text-white flex items-center justify-center font-bold text-sm">
+                    <div class="flex items-center space-x-2 md:space-x-3 pl-2 md:pl-3 border-l border-slate-200">
+                        <div class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-indigo-950 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
                             <i class="fa-solid fa-user"></i>
                         </div>
-                        <div class="text-xs">
+                        <div class="text-xs hidden md:block">
                             <p class="font-bold text-slate-800">{{ $user->name }}</p>
                             <p class="text-slate-500">{{ $user->roleLabel() }}</p>
                         </div>
-                        <form method="POST" action="{{ route('logout') }}" class="pl-2">
+                        <form method="POST" action="{{ route('logout') }}" class="pl-1 md:pl-2">
                             @csrf
                             <button type="submit" title="Cerrar sesión e ir al Login" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 text-xs font-semibold transition flex items-center space-x-1">
                                 <i class="fa-solid fa-right-from-bracket"></i>

@@ -43,11 +43,17 @@
 
                         <div class="pt-2 flex flex-wrap gap-2">
                             @if($traslado->estado === 'programado')
-                                <form method="POST" action="{{ route('movil.chofer.estado', $traslado) }}">
-                                    @csrf @method('PATCH')
-                                    <input type="hidden" name="estado" value="en_camino">
-                                    <button class="button-primary min-h-10"><i class="fa-solid fa-play mr-1.5"></i>Iniciar traslado</button>
-                                </form>
+                                @if($traslado->vehiculo_id && $traslado->chofer_id)
+                                    <form method="POST" action="{{ route('movil.chofer.estado', $traslado) }}">
+                                        @csrf @method('PATCH')
+                                        <input type="hidden" name="estado" value="en_camino">
+                                        <button class="button-primary min-h-10"><i class="fa-solid fa-play mr-1.5"></i>Iniciar traslado</button>
+                                    </form>
+                                @else
+                                    <span class="inline-flex items-center px-3 py-2 rounded-xl bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold">
+                                        <i class="fa-solid fa-clock mr-1.5 text-amber-600"></i>Pendiente de asignación de móvil y chofer en Flota
+                                    </span>
+                                @endif
                             @endif
                             @if($traslado->estado === 'en_camino')
                                 <form method="POST" action="{{ route('movil.chofer.estado', $traslado) }}">

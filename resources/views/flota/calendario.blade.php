@@ -425,7 +425,7 @@
                             <th class="px-4 py-3.5">Destino</th>
                             <th class="px-4 py-3.5">Asignación Actual</th>
                             <th class="px-4 py-3.5">Estado</th>
-                            <th class="px-4 py-3.5">Gestión</th>
+                            <th class="px-4 py-3.5 text-right">Gestión</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -455,11 +455,13 @@
                                         {{ $traslado->estadoLabel() }}
                                     </span>
                                 </td>
-                                <td class="table-cell">
+                                <td class="table-cell text-right">
                                     @if(auth()->user()->hasRole('administrador', 'gerencia', 'asistente'))
-                                        <details class="relative">
-                                            <summary class="cursor-pointer text-indigo-700 font-bold hover:underline">Asignar</summary>
-                                            <form method="POST" action="{{ route('flota.traslados.asignar', $traslado) }}" class="mt-2 w-64 space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 shadow-md right-0 ml-auto">
+                                        <details class="relative text-right">
+                                            <summary class="cursor-pointer text-indigo-700 font-bold hover:underline list-none inline-flex items-center justify-end">
+                                                <i class="fa-solid fa-user-check mr-1 text-[10px]"></i>Asignar
+                                            </summary>
+                                            <form method="POST" action="{{ route('flota.traslados.asignar', $traslado) }}" class="mt-2 w-56 space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 shadow-md text-left ml-auto">
                                                 @csrf @method('PATCH')
                                                 <select class="field bg-white" name="vehiculo_id">
                                                     <option value="">Sin vehículo</option>

@@ -6,15 +6,6 @@
 @section('content')
     <div class="space-y-6">
 
-        @if(session('status'))
-            <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
-                    <span>{{ session('status') }}</span>
-                </div>
-            </div>
-        @endif
-
         <!-- 1. ALERTA REACTIVA HORARIA DE CALL CENTER 600 -->
         <section id="banner-callcenter">
             @if($callCenterAbierto)
@@ -449,7 +440,7 @@
         document.getElementById('modal-select-estado-copago').value = data.estadoCopago || 'pendiente';
         const inputCopagoPagado = document.getElementById('modal-input-copago-pagado');
         inputCopagoPagado.value = data.montoCopagoPagado || 0;
-        inputCopagoPagado.max = Math.max(Number(data.totalServicio || 0), Number(data.montoCopagoFamilia || 0));
+        inputCopagoPagado.max = Number(data.montoCopagoFamilia || data.totalServicio || 0);
         document.getElementById('modal-select-metodo-pago').value = data.metodoPago || '';
         document.getElementById('modal-input-observaciones').value = data.observaciones || '';
 

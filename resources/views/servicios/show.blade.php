@@ -6,15 +6,6 @@
 @section('content')
     <div class="space-y-6">
 
-        @if(session('status'))
-            <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 flex items-center justify-between shadow-xs">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
-                    <span>{{ session('status') }}</span>
-                </div>
-            </div>
-        @endif
-
         <!-- ENCABEZADO PRINCIPAL -->
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-wrap justify-between items-center gap-4">
             <div>
