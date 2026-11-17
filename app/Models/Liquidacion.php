@@ -196,7 +196,7 @@ class Liquidacion extends Model
 
         $cuotasTotal = max(1, $cuotasTotal);
         $montoCuota = (int) floor($this->monto_copago_familia / $cuotasTotal);
-        $fechaBase = $primerVencimiento ?: Carbon::today()->subDays(6);
+        $fechaBase = $primerVencimiento ?: Carbon::today()->addDays(15);
 
         for ($i = 1; $i <= $cuotasTotal; $i++) {
             $vencimiento = (clone $fechaBase)->addMonths($i - 1);

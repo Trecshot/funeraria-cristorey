@@ -24,14 +24,14 @@ class FinanzasService
         $ufValue = $this->indicadoresService->getValorUF();
         $uf15Clp = round(15 * $ufValue);
 
-        $servicios = Servicio::with(['liquidacion', 'traslados'])->latest()->paginate(15);
+        $servicios = Servicio::with(['liquidacion.cuotas', 'traslados'])->latest()->paginate(15);
 
         foreach ($servicios as $servicio) {
             $servicio->obtenerOCrearLiquidacion($ufValue);
         }
 
-        $todosServicios = Servicio::with('liquidacion')->get();
-        foreach ($todosServicios as $s) {
+        $serviciosSinLiquidacion = Servicio::doesntHave('liquidacion')->get();
+        foreach ($serviciosSinLiquidacion as $s) {
             $s->obtenerOCrearLiquidacion($ufValue);
         }
 
@@ -71,9 +71,13 @@ class FinanzasService
     {
         $liquidacion = $servicio->obtenerOCrearLiquidacion();
 
-        $pagado = (int) ($validated['monto_copago_pagado'] ?? $liquidacion->monto_copago_pagado);
-        if ($validated['estado_copago'] === 'pagado_total' && $pagado < $liquidacion->monto_copago_familia) {
-            $pagado = $liquidacion->monto_copago_familia;
+        $pagado = max(0, (int) ($validated['monto_copago_pagado'] ?? $liquidacion->monto_copago_pagado));
+        $topeCopago = max(0, (int) $liquidacion->monto_copago_familia);
+        if ($topeCopago > 0 && $pagado > $topeCopago) {
+            $pagado = $topeCopago;
+        }
+        if ($validated['estado_copago'] === 'pagado_total' && $pagado < $topeCopago) {
+            $pagado = $topeCopago;
         }
 
         $fechaLiquidacion = $liquidacion->fecha_liquidacion;
