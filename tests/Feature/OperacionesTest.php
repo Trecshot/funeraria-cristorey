@@ -353,4 +353,52 @@ class OperacionesTest extends TestCase
             ->assertRedirect(route('flota.calendario'))
             ->assertSessionHasErrors('rut');
     }
+
+    public function test_flota_rejects_urban_vehicle_for_rural_transfer_and_unassigned_route_start(): void
+    {
+        $admin = User::factory()->create(['role' => 'administrador']);
+        $vehiculoUrbano = Vehiculo::create([
+            'patente' => 'URB-11-22',
+            'modelo_uso' => 'Carroza Ceremonial Urbana',
+            'apto_rural' => false,
+            'licencia_requerida' => 'A2',
+            'estado' => 'Disponible',
+            'kilometraje' => 12000,
+        ]);
+
+        $servicio = Servicio::create([
+            'created_by' => $admin->id,
+            'folio' => 'FC-RURAL-VAL',
+            'cliente_nombre' => 'Cliente Rural',
+            'difunto_nombre' => 'Difunto Rural',
+            'convenio' => 'particular',
+            'monto_servicio' => 1000000,
+            'estado' => 'abierto',
+        ]);
+
+        $trasladoRural = Traslado::create([
+            'servicio_id' => $servicio->id,
+            'cementerio' => 'Cementerio Rural Cholchol',
+            'salida_at' => now()->addDay(),
+            'estado' => 'programado',
+        ]);
+
+        // 1. No puede iniciar ruta si no tiene vehículo y chofer asignados
+        $this->actingAs($admin)
+            ->from(route('movil.chofer'))
+            ->patch(route('movil.chofer.estado', $trasladoRural), [
+                'estado' => 'en_camino',
+            ])
+            ->assertRedirect(route('movil.chofer'))
+            ->assertSessionHasErrors('estado');
+
+        // 2. No puede asignar vehículo urbano a un traslado rural
+        $this->actingAs($admin)
+            ->from(route('flota.calendario'))
+            ->patch(route('flota.traslados.asignar', $trasladoRural), [
+                'vehiculo_id' => $vehiculoUrbano->id,
+            ])
+            ->assertRedirect(route('flota.calendario'))
+            ->assertSessionHasErrors('vehiculo_id');
+    }
 }

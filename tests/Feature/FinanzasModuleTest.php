@@ -19,6 +19,8 @@ class FinanzasModuleTest extends TestCase
     {
         parent::setUp();
 
+        config(['funeraria.uf_value_clp' => 38000]);
+
         $this->userFinanzas = User::factory()->create([
             'email' => 'finanzas@cristorey.cl',
             'role' => 'finanzas',
@@ -196,7 +198,7 @@ class FinanzasModuleTest extends TestCase
             ->patch(route('finanzas.liquidaciones.update', $servicio), [
                 'estado_subvencion' => 'tramitacion',
                 'estado_copago' => 'abonado',
-                'monto_copago_pagado' => 999999999999,
+                'monto_copago_pagado' => 1000000,
             ]);
 
         $response->assertRedirect(route('finanzas.index'));
