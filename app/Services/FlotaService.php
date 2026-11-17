@@ -141,12 +141,27 @@ class FlotaService
 
     public function asignarTraslado(Traslado $traslado, array $data): void
     {
-        // 1. Validar estado del vehículo y prevención de solapamiento horario
+        if ($traslado->estado === 'completado') {
+            throw ValidationException::withMessages([
+                'vehiculo_id' => 'No se puede reasignar un traslado que ya fue completado.',
+            ]);
+        }
+
+        // 1. Validar estado del vehículo, aptitud rural y prevención de solapamiento horario
         if (! empty($data['vehiculo_id'])) {
             $vehiculo = Vehiculo::findOrFail($data['vehiculo_id']);
-            if (! $vehiculo->estaOperativo()) {
+            if (! $vehiculo->estaOperativo() && $traslado->vehiculo_id !== $vehiculo->id) {
                 throw ValidationException::withMessages([
                     'vehiculo_id' => "El vehículo {$vehiculo->patente} se encuentra en estado «{$vehiculo->estado_label}» y no puede asignarse.",
+                ]);
+            }
+
+            $esDestinoRural = stripos((string) $traslado->cementerio, 'rural') !== false
+                || ($traslado->servicio?->documentoLegal?->esRural() ?? false);
+
+            if ($esDestinoRural && ! $vehiculo->apto_rural) {
+                throw ValidationException::withMessages([
+                    'vehiculo_id' => "Restricción de terreno: el traslado hacia «{$traslado->cementerio}» requiere un vehículo apto para barro rural (el móvil {$vehiculo->patente} es solo urbano).",
                 ]);
             }
 
@@ -209,6 +224,12 @@ class FlotaService
 
     public function actualizarEstadoTrasladoChofer(Traslado $traslado, string $estado): void
     {
+        if (! $traslado->vehiculo_id || ! $traslado->chofer_id) {
+            throw ValidationException::withMessages([
+                'estado' => 'Debe asignar un vehículo y un conductor al traslado en el módulo de Flota antes de iniciar la ruta.',
+            ]);
+        }
+
         $traslado->update(['estado' => $estado]);
 
         if ($traslado->vehiculo) {

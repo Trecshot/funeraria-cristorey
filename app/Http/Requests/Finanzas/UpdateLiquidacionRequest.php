@@ -18,11 +18,10 @@ class UpdateLiquidacionRequest extends FormRequest
         /** @var \App\Models\Servicio|null $servicio */
         $servicio = $this->route('servicio');
         $liquidacion = $servicio?->obtenerOCrearLiquidacion();
-        $maxPermitido = max(
-            (int) ($servicio?->monto_servicio ?? 0),
-            (int) ($liquidacion?->monto_copago_familia ?? 0),
-            0
-        );
+        $copagoAcordado = (int) ($liquidacion?->monto_copago_familia ?? 0);
+        $maxPermitido = $copagoAcordado > 0
+            ? $copagoAcordado
+            : max((int) ($servicio?->monto_servicio ?? 0), 0);
 
         return [
             'folio_factura' => ['nullable', 'string', 'max:50'],
@@ -42,7 +41,7 @@ class UpdateLiquidacionRequest extends FormRequest
     {
         return [
             'monto_copago_pagado.min' => 'El monto abonado no puede ser negativo.',
-            'monto_copago_pagado.max' => 'El monto abonado excede el total permitido para este expediente.',
+            'monto_copago_pagado.max' => 'El monto abonado excede el copago familiar acordado para este expediente.',
             'monto_copago_pagado.integer' => 'El monto abonado debe ser un valor entero en pesos (CLP).',
         ];
     }
