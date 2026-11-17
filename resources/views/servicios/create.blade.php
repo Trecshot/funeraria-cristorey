@@ -23,10 +23,14 @@
                 </span>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2">
+            <div class="grid gap-4 md:grid-cols-3">
                 <label class="block">
                     <span class="label">Nombre completo del Contratante *</span>
                     <input class="field" name="cliente_nombre" value="{{ old('cliente_nombre', $servicio->cliente_nombre) }}" placeholder="Ej: María González" required>
+                </label>
+                <label class="block">
+                    <span class="label">RUT del Contratante</span>
+                    <input class="field font-mono" name="cliente_rut" value="{{ old('cliente_rut', $servicio->cliente_rut) }}" placeholder="Ej: 12.345.678-9">
                 </label>
                 <label class="block">
                     <span class="label">Teléfono de contacto</span>
@@ -41,6 +45,10 @@
                 <label class="block">
                     <span class="label">Nombre completo del Difunto *</span>
                     <input class="field" name="difunto_nombre" value="{{ old('difunto_nombre', $servicio->difunto_nombre) }}" required>
+                </label>
+                <label class="block">
+                    <span class="label">RUT del Difunto (Causante)</span>
+                    <input class="field font-mono" name="difunto_rut" value="{{ old('difunto_rut', $servicio->difunto_rut) }}" placeholder="Ej: 7.890.123-4">
                 </label>
                 <label class="block">
                     <span class="label">Escolaridad (Registro Civil)</span>
@@ -312,7 +320,7 @@
                 </label>
                 <label class="block">
                     <span class="label">Total del servicio (CLP) *</span>
-                    <input class="field" id="total-servicio" type="number" min="0" step="1" name="monto_servicio" value="{{ old('monto_servicio', $servicio->monto_servicio ?? 0) }}" required>
+                    <input class="field" id="total-servicio" type="number" min="0" max="9999999999" step="1" name="monto_servicio" value="{{ old('monto_servicio', $servicio->monto_servicio ?? 0) }}" required>
                 </label>
                 <div class="rounded-xl bg-indigo-50/70 border border-indigo-100 p-3 text-xs">
                     <p class="font-bold text-indigo-950">Copago familiar estimado</p>
@@ -369,7 +377,9 @@
                 @foreach(\App\Models\DocumentoServicio::TIPOS as $tipoKey => $tipoTitulo)
                     @php
                         $doc = $documentosExistentes->get($tipoKey);
-                        $esRequerido = in_array($tipoKey, $requeridos, true) || $tipoKey === 'resolucion_seremi';
+                        $esRequerido = ($tipoKey === 'resolucion_seremi')
+                            ? $trasladoInterurbano
+                            : in_array($tipoKey, $requeridos, true);
                         $iconoTipo = match($tipoKey) {
                             'certificado_defuncion' => 'fa-file-lines text-rose-500',
                             'resolucion_seremi' => 'fa-file-shield text-indigo-600',

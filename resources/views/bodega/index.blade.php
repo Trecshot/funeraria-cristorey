@@ -5,13 +5,6 @@
 
 @section('content')
     <div class="space-y-6">
-        @if(session('status'))
-            <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-xs text-emerald-950 flex items-center space-x-3 shadow-sm" role="alert">
-                <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
-                <span>{{ session('status') }}</span>
-            </div>
-        @endif
-
         @php
             $urnasCriticas = $urnas->filter(fn ($u) => $u->stock_critico || ($u->stock_salon <= 0 && $u->stock_taller > 0));
         @endphp
@@ -44,7 +37,7 @@
                         <i class="fa-solid fa-clipboard-check mr-1.5"></i>Normativa Seremi al día
                     </span>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        <i class="fa-solid fa-boxes-packing mr-1.5"></i>30 modelos registrados
+                        <i class="fa-solid fa-boxes-packing mr-1.5"></i>{{ $urnas->count() }} modelos registrados
                     </span>
                 </div>
             </div>

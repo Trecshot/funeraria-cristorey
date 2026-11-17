@@ -247,17 +247,16 @@
                             value="csv"
                             class="button-primary bg-emerald-700 hover:bg-emerald-800 inline-flex items-center justify-center px-5 py-2.5 text-xs font-bold shadow-sm transition cursor-pointer"
                         >
-                            <i class="fa-solid fa-file-csv text-sm mr-2"></i>📥 Generar Reporte CSV
+                            <i class="fa-solid fa-file-csv text-sm mr-2"></i>Generar Reporte CSV
                         </button>
 
                         <button
                             type="submit"
                             name="formato"
                             value="pdf"
-                            formtarget="_blank"
                             class="button-secondary border-indigo-200 bg-indigo-50 text-indigo-900 hover:bg-indigo-100 inline-flex items-center justify-center px-5 py-2.5 text-xs font-bold shadow-xs transition cursor-pointer"
                         >
-                            <i class="fa-solid fa-file-pdf text-rose-600 text-sm mr-2"></i>📄 Generar PDF Resumen
+                            <i class="fa-solid fa-file-pdf text-rose-600 text-sm mr-2"></i>Generar PDF Resumen
                         </button>
                     </div>
                 </div>

@@ -13,7 +13,7 @@
     <div id="app-container" class="flex min-h-screen flex-col md:flex-row">
 
         <!-- SIDEBAR IZQUIERDO (ESTILO FIEL AL PROTOTIPO) -->
-        <aside class="w-full md:w-64 sidebar-bg text-white flex-shrink-0 flex flex-col justify-between shadow-xl select-none">
+        <aside id="app-sidebar" class="hidden md:flex w-full md:w-64 sidebar-bg text-white flex-shrink-0 flex-col justify-between shadow-xl select-none">
             <div>
                 <!-- Logo Superior con Cruz y Laureles -->
                 <a href="{{ $user->homeRoute() }}" class="block pt-7 pb-5 px-6 text-center border-b border-indigo-800/50">
@@ -105,7 +105,9 @@
             <!-- HEADER SUPERIOR BLANCO -->
             <header class="bg-white border-b border-slate-200 px-6 md:px-8 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
                 <div class="flex items-center space-x-4">
-                    <span class="text-slate-500 text-lg"><i class="fa-solid fa-bars"></i></span>
+                    <button type="button" onclick="document.getElementById('app-sidebar')?.classList.toggle('hidden')" aria-label="Alternar menú lateral" class="text-slate-500 hover:text-indigo-900 text-lg p-1 rounded-lg hover:bg-slate-100 transition">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
                     <div>
                         <h2 class="font-serif-title text-xl font-bold text-slate-900">Bienvenido, {{ $user->name }}</h2>
                         <p class="text-xs text-slate-500">@yield('heading', 'Panel de control') - Funeraria Cristo Rey (Sede Calle Blanco)</p>

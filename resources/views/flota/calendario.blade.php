@@ -5,27 +5,6 @@
 
 @section('content')
     <div class="space-y-6">
-        @if(session('status'))
-            <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-xs text-emerald-950 flex items-center space-x-3 shadow-sm" role="alert">
-                <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
-                <span>{{ session('status') }}</span>
-            </div>
-        @endif
-
-        @if($errors->any())
-            <div class="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs text-rose-950 space-y-1 shadow-sm" role="alert">
-                <div class="font-bold flex items-center space-x-2">
-                    <i class="fa-solid fa-triangle-exclamation text-rose-600 text-sm"></i>
-                    <span>Restricción operativa de flota detectada:</span>
-                </div>
-                <ul class="list-disc list-inside pl-5 space-y-0.5">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
         <!-- Encabezado y KPIs Operativos de Flota -->
         <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 text-xs space-y-4">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -205,7 +184,7 @@
                                             <summary class="cursor-pointer list-none px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition">
                                                 <i class="fa-solid fa-sliders mr-1"></i>Modificar
                                             </summary>
-                                            <form method="POST" action="{{ route('flota.vehiculos.estado', $vehiculo->id) }}" class="mt-2 p-3 rounded-xl bg-white border border-slate-200 shadow-lg space-y-2 min-w-52 z-20 relative">
+                                            <form method="POST" action="{{ route('flota.vehiculos.estado', $vehiculo->id) }}" class="mt-2 p-3 rounded-xl bg-white border border-slate-200 shadow-lg space-y-2 w-56 z-20 right-0 ml-auto">
                                                 @csrf @method('PATCH')
                                                 <label class="block">
                                                     <span class="label text-[10px]">Estado operativo</span>
@@ -478,9 +457,9 @@
                                 </td>
                                 <td class="table-cell">
                                     @if(auth()->user()->hasRole('administrador', 'gerencia', 'asistente'))
-                                        <details>
+                                        <details class="relative">
                                             <summary class="cursor-pointer text-indigo-700 font-bold hover:underline">Asignar</summary>
-                                            <form method="POST" action="{{ route('flota.traslados.asignar', $traslado) }}" class="mt-2 min-w-60 space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                            <form method="POST" action="{{ route('flota.traslados.asignar', $traslado) }}" class="mt-2 w-64 space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 shadow-md right-0 ml-auto">
                                                 @csrf @method('PATCH')
                                                 <select class="field bg-white" name="vehiculo_id">
                                                     <option value="">Sin vehículo</option>

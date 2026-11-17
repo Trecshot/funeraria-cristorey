@@ -40,7 +40,7 @@
                                 <td class="p-3.5">
                                     <div class="flex items-center gap-2.5">
                                         <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                                            {{ strtoupper(substr($usuario->name, 0, 2)) }}
+                                            {{ mb_strtoupper(mb_substr($usuario->name, 0, 2, 'UTF-8'), 'UTF-8') }}
                                         </div>
                                         <div class="min-w-0">
                                             <span class="font-bold text-slate-900 block truncate">{{ $usuario->name }}</span>
@@ -287,7 +287,7 @@
 
                         <label class="block">
                             <span class="label">Estado Laboral Inicial</span>
-                            <select name="estado_operativo" class="field bg-white">
+                            <select id="select-estado-operativo-crear" name="estado_operativo" class="field bg-white">
                                 @foreach(\App\Models\User::ESTADOS_OPERATIVOS as $opKey => $opMeta)
                                     <option value="{{ $opKey }}" @selected(old('estado_operativo', 'Disponible') === $opKey)>{{ $opMeta['label'] }}</option>
                                 @endforeach
@@ -451,9 +451,22 @@
 
 @push('scripts')
 <script>
+    function sincronizarOpcionEnRuta(selectEl, rol) {
+        if (!selectEl) return;
+        const optEnRuta = selectEl.querySelector('option[value="En Ruta"]');
+        if (!optEnRuta) return;
+        const esChofer = rol === 'chofer';
+        optEnRuta.disabled = !esChofer;
+        optEnRuta.hidden = !esChofer;
+        if (!esChofer && selectEl.value === 'En Ruta') {
+            selectEl.value = 'Disponible';
+        }
+    }
+
     function actualizarCamposPorRol(rol) {
         const wrapperLicencia = document.getElementById('wrapper-tipo-licencia');
         const selectLicencia = document.getElementById('select-tipo-licencia');
+        const selectEstadoCrear = document.getElementById('select-estado-operativo-crear');
         if (wrapperLicencia) {
             if (rol === 'chofer') {
                 wrapperLicencia.classList.remove('hidden');
@@ -464,6 +477,7 @@
                 wrapperLicencia.classList.add('hidden');
             }
         }
+        sincronizarOpcionEnRuta(selectEstadoCrear, rol);
     }
 
     function abrirModalEditar(data) {
@@ -497,6 +511,7 @@
 
     function actualizarCamposPorRolModal(rol) {
         const wrapper = document.getElementById('wrapper-modal-licencia');
+        const selectEstadoModal = document.getElementById('edit-estado-operativo');
         if (wrapper) {
             if (rol === 'chofer') {
                 wrapper.classList.remove('hidden');
@@ -504,6 +519,7 @@
                 wrapper.classList.add('hidden');
             }
         }
+        sincronizarOpcionEnRuta(selectEstadoModal, rol);
     }
 
     document.addEventListener('keydown', (e) => {

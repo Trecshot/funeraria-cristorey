@@ -447,7 +447,9 @@
         document.getElementById('modal-input-folio-boleta').value = data.folioBoleta || '';
         document.getElementById('modal-select-estado-subvencion').value = data.estadoSubvencion || 'tramitacion';
         document.getElementById('modal-select-estado-copago').value = data.estadoCopago || 'pendiente';
-        document.getElementById('modal-input-copago-pagado').value = data.montoCopagoPagado || 0;
+        const inputCopagoPagado = document.getElementById('modal-input-copago-pagado');
+        inputCopagoPagado.value = data.montoCopagoPagado || 0;
+        inputCopagoPagado.max = Math.max(Number(data.totalServicio || 0), Number(data.montoCopagoFamilia || 0));
         document.getElementById('modal-select-metodo-pago').value = data.metodoPago || '';
         document.getElementById('modal-input-observaciones').value = data.observaciones || '';
 
