@@ -177,4 +177,30 @@ class FinanzasModuleTest extends TestCase
         $rGeneral->assertOk();
         $this->assertEquals('application/pdf', $rGeneral->headers->get('content-type'));
     }
+
+    public function test_update_liquidacion_rejects_excessive_monto_copago_pagado(): void
+    {
+        $servicio = Servicio::create([
+            'folio' => 'FC-TEST-OVERFLOW',
+            'created_by' => $this->userFinanzas->id,
+            'cliente_nombre' => 'Familia Alarcon',
+            'difunto_nombre' => 'Roberto Alarcon',
+            'convenio' => 'ips',
+            'monto_servicio' => 1500000,
+            'estado' => 'abierto',
+        ]);
+        $liquidacion = $servicio->obtenerOCrearLiquidacion();
+
+        $response = $this->actingAs($this->userFinanzas)
+            ->from(route('finanzas.index'))
+            ->patch(route('finanzas.liquidaciones.update', $servicio), [
+                'estado_subvencion' => 'tramitacion',
+                'estado_copago' => 'abonado',
+                'monto_copago_pagado' => 999999999999,
+            ]);
+
+        $response->assertRedirect(route('finanzas.index'));
+        $response->assertSessionHasErrors('monto_copago_pagado');
+        $this->assertSame(0, $liquidacion->fresh()->monto_copago_pagado);
+    }
 }

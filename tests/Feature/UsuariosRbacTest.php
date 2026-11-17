@@ -223,4 +223,32 @@ class UsuariosRbacTest extends TestCase
             'telefono' => '+56 9 1234 5678',
         ]);
     }
+
+    public function test_non_chofer_normalizes_en_ruta_status_and_rejects_weak_password(): void
+    {
+        $admin = User::factory()->create(['role' => 'administrador']);
+
+        $weakResponse = $this->actingAs($admin)->post(route('usuarios.store'), [
+            'name' => 'Clave Debil',
+            'email' => 'debil@cristorey.cl',
+            'role' => 'asistente',
+            'password' => 'abcdefghijkl',
+        ]);
+        $weakResponse->assertSessionHasErrors('password');
+
+        $okResponse = $this->actingAs($admin)->post(route('usuarios.store'), [
+            'name' => 'Asistente En Ruta Bypass',
+            'email' => 'asistente.ruta@cristorey.cl',
+            'role' => 'asistente',
+            'estado_operativo' => 'En Ruta',
+            'password' => 'segura-clave-1234',
+        ]);
+        $okResponse->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'asistente.ruta@cristorey.cl',
+            'role' => 'asistente',
+            'estado_operativo' => 'Disponible',
+        ]);
+    }
 }

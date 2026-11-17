@@ -337,4 +337,20 @@ class OperacionesTest extends TestCase
             ->assertRedirect(route('flota.calendario'))
             ->assertSessionHasErrors('vehiculo_id');
     }
+
+    public function test_chofer_registration_rejects_invalid_rut_format(): void
+    {
+        $admin = User::factory()->create(['role' => 'administrador']);
+
+        $this->actingAs($admin)
+            ->from(route('flota.calendario'))
+            ->post(route('flota.choferes.store'), [
+                'nombre_completo' => 'Conductor RUT Invalido',
+                'rut' => 'invalid-rut',
+                'licencia_clase' => 'A2',
+                'estado' => 'Disponible',
+            ])
+            ->assertRedirect(route('flota.calendario'))
+            ->assertSessionHasErrors('rut');
+    }
 }

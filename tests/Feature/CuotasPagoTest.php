@@ -221,4 +221,30 @@ class CuotasPagoTest extends TestCase
         $response->assertSee('Registrar Pago');
         $response->assertSee('Ver en Módulo de Finanzas');
     }
+
+    public function test_new_service_generates_future_installments_and_starts_pendiente_not_moroso(): void
+    {
+        $admin = User::factory()->create(['role' => 'administrador']);
+
+        $servicio = Servicio::create([
+            'created_by' => $admin->id,
+            'folio' => 'FC-NEW-NOT-MOROSO',
+            'cliente_nombre' => 'Familia Nueva',
+            'difunto_nombre' => 'Causante Nuevo',
+            'convenio' => 'ips',
+            'monto_servicio' => 1500000,
+            'estado' => 'abierto',
+        ]);
+
+        $servicio->calcularAportes();
+        $servicio->save();
+
+        $liquidacion = $servicio->obtenerOCrearLiquidacion();
+        $liquidacion->refresh();
+
+        $this->assertSame(Liquidacion::ESTADO_GENERAL_PENDIENTE, $liquidacion->estado_general);
+        $primeraCuota = $liquidacion->cuotas()->orderBy('numero_cuota')->firstOrFail();
+        $this->assertFalse($primeraCuota->estaAtrasada());
+        $this->assertSame(CuotaPago::ESTADO_PENDIENTE, $primeraCuota->estado);
+    }
 }
